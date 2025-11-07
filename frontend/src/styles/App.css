@@ -1,0 +1,326 @@
+/* Variables CSS */
+:root {
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+  --zoudou-primary: #2c5530;
+  --zoudou-secondary: #7eaa92;
+}
+
+/* Global Styles */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f5f5;
+}
+
+.min-vh-100 {
+  min-height: 100vh;
+}
+
+/* Header Styles */
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Card Styles */
+.card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.product-card {
+  transition: all 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.service-card {
+  border-left: 4px solid var(--primary-color);
+}
+
+/* Button Styles */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--zoudou-primary);
+  border-color: var(--zoudou-primary);
+}
+
+.btn-primary:hover {
+  background-color: #244a28;
+  border-color: #244a28;
+  transform: translateY(-1px);
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, var(--zoudou-primary) 0%, var(--zoudou-secondary) 100%);
+}
+
+/* Icon Wrapper */
+.icon-wrapper {
+  transition: transform 0.3s ease;
+}
+
+.icon-wrapper:hover {
+  transform: scale(1.1);
+}
+
+/* Balance Display */
+.balance-display {
+  font-family: 'Courier New', monospace;
+}
+
+/* Profile Styles */
+.profile-avatar {
+  transition: transform 0.3s ease;
+}
+
+.profile-avatar:hover {
+  transform: scale(1.05);
+}
+
+/* Form Styles */
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--zoudou-primary);
+  box-shadow: 0 0 0 0.2rem rgba(44, 85, 48, 0.25);
+}
+
+/* Badge Styles */
+.badge {
+  font-weight: 500;
+}
+
+/* Tab Styles */
+.nav-tabs .nav-link {
+  border: none;
+  color: var(--secondary-color);
+  font-weight: 500;
+  border-radius: 8px 8px 0 0;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--zoudou-primary);
+  border-bottom: 3px solid var(--zoudou-primary);
+  background-color: transparent;
+}
+
+/* Alert Styles */
+.alert {
+  border-radius: 8px;
+  border: none;
+}
+
+/* Loading Spinner */
+.spinner-border {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Border Dashed for Add Cards */
+.border-dashed {
+  border: 2px dashed #dee2e6 !important;
+}
+
+/* Statistics */
+.stat-item {
+  padding: 1rem;
+}
+
+.stat-item h3 {
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+/* Wallet Styles */
+.wallet-component .balance-display {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hero-section .display-4 {
+    font-size: 2rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .btn-lg {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Animation for alerts */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.alert {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--zoudou-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--zoudou-primary);
+}
+/* Styles pour l'authentification */
+.min-vh-75 {
+  min-height: 75vh;
+}
+
+.hover-text-primary:hover {
+  color: var(--primary-color) !important;
+  transition: color 0.3s ease;
+}
+
+/* Styles pour les formulaires */
+.form-control:focus {
+  border-color: var(--zoudou-primary);
+  box-shadow: 0 0 0 0.2rem rgba(44, 85, 48, 0.25);
+}
+
+/* Styles pour le footer */
+.footer-brand {
+  border-left: 4px solid var(--zoudou-primary);
+  padding-left: 1rem;
+}
+
+.social-links a {
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.social-links a:hover {
+  color: var(--zoudou-primary) !important;
+  transform: translateY(-2px);
+}
+
+.payment-methods i {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.payment-methods i:hover {
+  opacity: 1;
+}
+
+/* Animation pour les étapes d'inscription */
+.step-progress .step-circle {
+  transition: all 0.3s ease;
+}
+
+.step-progress .step-circle.active {
+  background-color: var(--zoudou-primary);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* Responsive design pour l'authentification */
+@media (max-width: 768px) {
+  .auth-card {
+    margin: 1rem;
+    padding: 1.5rem !important;
+  }
+  
+  .step-progress {
+    font-size: 0.8rem;
+  }
+}
+
+/* Loading states */
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Styles pour les alertes */
+.alert {
+  border: none;
+  border-radius: 8px;
+}
+
+.alert-danger {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+.alert-success {
+  background-color: rgba(25, 135, 84, 0.1);
+  color: #198754;
+}
+
+/* Animation de pulse pour les icônes */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.icon-wrapper {
+  animation: pulse 2s infinite;
+}
+
+/* Styles pour la barre de progression */
+.progress {
+  border-radius: 10px;
+  height: 8px;
+}
+
+.progress-bar {
+  border-radius: 10px;
+  transition: width 0.5s ease;
+}

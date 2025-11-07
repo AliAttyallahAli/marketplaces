@@ -1,0 +1,209 @@
+/* Mobile First Approach */
+
+/* Extra small devices (phones, 576px and down) */
+@media (max-width: 576px) {
+  .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  
+  .display-4 {
+    font-size: 2rem;
+  }
+  
+  .btn-lg {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  /* Stack columns on mobile */
+  .row-cols-md-2 > *,
+  .row-cols-lg-3 > *,
+  .row-cols-xl-4 > * {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) {
+  .container {
+    max-width: 540px;
+  }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+  .container {
+    max-width: 720px;
+  }
+  
+  .row-cols-md-2 > * {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+  .container {
+    max-width: 960px;
+  }
+  
+  .row-cols-lg-3 > * {
+    flex: 0 0 33.333333%;
+    max-width: 33.333333%;
+  }
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+  .container {
+    max-width: 1140px;
+  }
+  
+  .row-cols-xl-4 > * {
+    flex: 0 0 25%;
+    max-width: 25%;
+  }
+}
+
+/* Specific component responsive adjustments */
+
+/* Navigation */
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    margin-top: 1rem;
+  }
+  
+  .navbar-nav .nav-link {
+    padding: 0.5rem 0;
+  }
+}
+
+/* Product cards */
+@media (max-width: 767.98px) {
+  .product-card .btn-group {
+    flex-direction: column;
+  }
+  
+  .product-card .btn {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Forms */
+@media (max-width: 575.98px) {
+  .form-row .col, 
+  .form-row [class*="col-"] {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Tables */
+@media (max-width: 767.98px) {
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.5rem;
+  }
+}
+
+/* Modals */
+@media (max-width: 575.98px) {
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+}
+
+/* Dashboard layouts */
+@media (max-width: 1199.98px) {
+  .dashboard-sidebar {
+    margin-bottom: 2rem;
+  }
+}
+
+/* Wallet components */
+@media (max-width: 767.98px) {
+  .wallet-actions .btn {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Hide/Show elements based on screen size */
+.d-md-none {
+  /* Already in Bootstrap */
+}
+
+.d-none.d-md-block {
+  /* Already in Bootstrap */
+}
+
+/* Text sizing for mobile */
+@media (max-width: 767.98px) {
+  .display-1 { font-size: 2.5rem; }
+  .display-2 { font-size: 2rem; }
+  .display-3 { font-size: 1.75rem; }
+  .display-4 { font-size: 1.5rem; }
+  
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+  h4 { font-size: 1.1rem; }
+  h5 { font-size: 1rem; }
+  h6 { font-size: 0.9rem; }
+}
+
+/* Padding and margin adjustments for mobile */
+@media (max-width: 767.98px) {
+  .py-5 {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+  
+  .py-4 {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+  
+  .mb-5 {
+    margin-bottom: 2rem !important;
+  }
+  
+  .mb-4 {
+    margin-bottom: 1.5rem !important;
+  }
+}
+
+/* Button groups on mobile */
+@media (max-width: 575.98px) {
+  .btn-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .btn-group .btn {
+    border-radius: 0.375rem !important;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Ensure images are responsive */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Fix for iOS input zoom */
+@media (max-width: 767.98px) {
+  input, select, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}

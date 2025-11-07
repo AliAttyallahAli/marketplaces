@@ -1,0 +1,65 @@
+/* Override Bootstrap primary color */
+.bg-primary {
+  background-color: var(--zoudou-primary) !important;
+}
+
+.btn-primary {
+  background-color: var(--zoudou-primary);
+  border-color: var(--zoudou-primary);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #244a28;
+  border-color: #244a28;
+}
+
+.text-primary {
+  color: var(--zoudou-primary) !important;
+}
+
+.border-primary {
+  border-color: var(--zoudou-primary) !important;
+}
+
+/* Navbar overrides */
+.navbar-dark .navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.navbar-dark .navbar-nav .nav-link:hover {
+  color: white;
+}
+
+/* Card overrides */
+.card-header {
+  background-color: white;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Table overrides */
+.table th {
+  border-top: none;
+  font-weight: 600;
+  color: var(--zoudou-primary);
+}
+
+/* Form overrides */
+.form-label {
+  font-weight: 500;
+  color: var(--dark-color);
+  margin-bottom: 0.5rem;
+}
+
+/* Badge overrides */
+.badge {
+  font-size: 0.75em;
+}
+
+/* Progress bar overrides */
+.progress {
+  border-radius: 10px;
+}
+
+.progress-bar {
+  border-radius: 10px;
+}
