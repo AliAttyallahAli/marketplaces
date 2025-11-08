@@ -1,75 +1,190 @@
-const Wallet = require('../models/Wallet');
-const Transaction = require('../models/Transaction');
+const db = require('../config/database');
 
-exports.getBalance = (req, res) => {
+const walletController = {
+  // Obtenir le solde du wallet
+  getBalance: (req, res) => {
     const userId = req.user.id;
 
-    Wallet.findByUserId(userId, (err, wallet) => {
-        if (err) return res.status(500).json({ error: 'Erreur serveur' });
-        if (!wallet) return res.status(404).json({ error: 'Wallet non trouvé' });
+    db.get('SELECT * FROM wallets WHERE user_id = ?', [userId], (err, wallet) => {
+      if (err) {
+        return res.status(500).json({ error: 'Erreur récupération solde' });
+      }
 
-        res.json({ 
-            balance: wallet.balance,
-            phone: wallet.phone,
-            qr_code: wallet.qr_code
-        });
+      if (!wallet) {
+        return res.status(404).json({ error: 'Wallet non trouvé' });
+      }
+
+      res.json({
+        balance: wallet.balance,
+        phone: wallet.phone,
+        qr_code: wallet.qr_code
+      });
     });
-};
+  },
 
-exports.p2pTransfer = (req, res) => {
+  // Transfert P2P
+  p2pTransfer: (req, res) => {
     const fromUserId = req.user.id;
     const { to_phone, amount } = req.body;
 
-    // Vérifier le solde
-    Wallet.findByUserId(fromUserId, (err, fromWallet) => {
-        if (err) return res.status(500).json({ error: 'Erreur serveur' });
-        if (!fromWallet) return res.status(404).json({ error: 'Wallet expéditeur non trouvé' });
+    if (!to_phone || !amount) {
+      return res.status(400).json({ error: 'Numéro destinataire et montant requis' });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({ error: 'Montant doit être positif' });
+    }
+
+    // Commencer une transaction
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION');
+
+      // Vérifier le solde de l'expéditeur
+      db.get('SELECT * FROM wallets WHERE user_id = ?', [fromUserId], (err, fromWallet) => {
+        if (err) {
+          db.run('ROLLBACK');
+          return res.status(500).json({ error: 'Erreur vérification solde' });
+        }
+
+        if (!fromWallet) {
+          db.run('ROLLBACK');
+          return res.status(404).json({ error: 'Wallet expéditeur non trouvé' });
+        }
 
         if (parseFloat(fromWallet.balance) < parseFloat(amount)) {
-            return res.status(400).json({ error: 'Solde insuffisant' });
+          db.run('ROLLBACK');
+          return res.status(400).json({ error: 'Solde insuffisant' });
         }
 
         // Trouver le wallet destinataire
-        Wallet.findByPhone(to_phone, (err, toWallet) => {
-            if (err) return res.status(500).json({ error: 'Erreur serveur' });
-            if (!toWallet) return res.status(404).json({ error: 'Wallet destinataire non trouvé' });
+        db.get('SELECT * FROM wallets WHERE phone = ?', [to_phone], (err, toWallet) => {
+          if (err) {
+            db.run('ROLLBACK');
+            return res.status(500).json({ error: 'Erreur recherche destinataire' });
+          }
 
-            const fee = amount * 0.01; // 1% de frais
-            const netAmount = amount - fee;
+          if (!toWallet) {
+            db.run('ROLLBACK');
+            return res.status(404).json({ error: 'Destinataire non trouvé' });
+          }
 
-            // Début de la transaction
-            Transaction.createP2P({
-                from_user_id: fromUserId,
-                to_user_id: toWallet.user_id,
-                from_wallet_phone: fromWallet.phone,
-                to_wallet_phone: to_phone,
-                amount: amount,
-                fee: fee
-            }, (err, transactionId) => {
-                if (err) return res.status(500).json({ error: 'Erreur création transaction' });
+          const fee = amount * 0.01; // 1% de frais
+          const netAmount = amount - fee;
 
-                // Mettre à jour les soldes
-                Wallet.updateBalance(fromWallet.phone, -amount, (err) => {
-                    if (err) return res.status(500).json({ error: 'Erreur débit wallet' });
+          // Créer la transaction
+          db.run(
+            `INSERT INTO transactions (
+              from_user_id, to_user_id, from_wallet_phone, to_wallet_phone,
+              amount, fee, type, status
+            ) VALUES (?, ?, ?, ?, ?, ?, 'p2p', 'completed')`,
+            [fromUserId, toWallet.user_id, fromWallet.phone, to_phone, amount, fee],
+            function(err) {
+              if (err) {
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: 'Erreur création transaction' });
+              }
 
-                    Wallet.updateBalance(toWallet.phone, netAmount, (err) => {
-                        if (err) return res.status(500).json({ error: 'Erreur crédit wallet' });
+              // Débiter l'expéditeur
+              db.run(
+                'UPDATE wallets SET balance = balance - ? WHERE user_id = ?',
+                [amount, fromUserId],
+                function(err) {
+                  if (err) {
+                    db.run('ROLLBACK');
+                    return res.status(500).json({ error: 'Erreur débit wallet' });
+                  }
 
-                        // Mettre à jour le statut de la transaction
-                        Transaction.updateStatus(transactionId, 'completed', (err) => {
-                            if (err) return res.status(500).json({ error: 'Erreur mise à jour transaction' });
+                  // Créditer le destinataire
+                  db.run(
+                    'UPDATE wallets SET balance = balance + ? WHERE user_id = ?',
+                    [netAmount, toWallet.user_id],
+                    function(err) {
+                      if (err) {
+                        db.run('ROLLBACK');
+                        return res.status(500).json({ error: 'Erreur crédit wallet' });
+                      }
 
-                            res.json({ 
-                                message: 'Transfert effectué avec succès',
-                                transactionId,
-                                amount: amount,
-                                fee: fee,
-                                netAmount: netAmount
-                            });
-                        });
-                    });
-                });
-            });
+                      // Créditer les frais au wallet marketplace
+                      db.run(
+                        'UPDATE wallets SET balance = balance + ? WHERE phone = "+235600000001"',
+                        [fee],
+                        function(err) {
+                          if (err) {
+                            db.run('ROLLBACK');
+                            return res.status(500).json({ error: 'Erreur frais marketplace' });
+                          }
+
+                          db.run('COMMIT');
+                          res.json({
+                            message: 'Transfert effectué avec succès',
+                            transactionId: this.lastID,
+                            amount: amount,
+                            fee: fee,
+                            netAmount: netAmount
+                          });
+                        }
+                      );
+                    }
+                  );
+                }
+              );
+            }
+          );
         });
+      });
     });
+  },
+
+  // Obtenir l'historique des transactions
+  getTransactions: (req, res) => {
+    const userId = req.user.id;
+
+    db.all(
+      `SELECT t.*, 
+              u_from.nom as from_nom, u_from.prenom as from_prenom,
+              u_to.nom as to_nom, u_to.prenom as to_prenom,
+              p.nom as product_nom
+       FROM transactions t
+       LEFT JOIN users u_from ON t.from_user_id = u_from.id
+       LEFT JOIN users u_to ON t.to_user_id = u_to.id
+       LEFT JOIN products p ON t.product_id = p.id
+       WHERE t.from_user_id = ? OR t.to_user_id = ?
+       ORDER BY t.created_at DESC
+       LIMIT 50`,
+      [userId, userId],
+      (err, transactions) => {
+        if (err) {
+          return res.status(500).json({ error: 'Erreur récupération transactions' });
+        }
+
+        res.json({ transactions });
+      }
+    );
+  },
+
+  // Obtenir les transactions vendeur
+  getVendeurTransactions: (req, res) => {
+    const vendeurId = req.user.id;
+
+    db.all(
+      `SELECT t.*, 
+              u_from.nom as from_nom, u_from.prenom as from_prenom,
+              p.nom as product_nom
+       FROM transactions t
+       JOIN users u_from ON t.from_user_id = u_from.id
+       LEFT JOIN products p ON t.product_id = p.id
+       WHERE t.to_user_id = ? AND t.type = 'achat'
+       ORDER BY t.created_at DESC`,
+      [vendeurId],
+      (err, transactions) => {
+        if (err) {
+          return res.status(500).json({ error: 'Erreur récupération transactions vendeur' });
+        }
+
+        res.json({ transactions });
+      }
+    );
+  }
 };
+
+module.exports = walletController;

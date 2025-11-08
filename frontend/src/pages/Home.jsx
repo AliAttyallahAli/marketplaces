@@ -218,8 +218,7 @@ const Home = () => {
               </div>
             </Col>
           </Row>
-          // Ajouter avant la fermeture du Container
-<section className="py-5 bg-dark text-white">
+<section className="py-5 bg-white text-black">
   <Container>
     <Row className="justify-content-center">
       <Col lg={8}>

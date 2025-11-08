@@ -19,7 +19,7 @@ const Footer = () => {
                   ZouDou-Souk
                 </h5>
               </div>
-              <p className="text-muted mb-3">
+              <p className="text-white mb-3">
                 La première marketplace tchadienne qui connecte artisans, commerçants et consommateurs. 
                 Paiements sécurisés via mobile money et services intégrés.
               </p>
@@ -44,27 +44,27 @@ const Footer = () => {
               <h6 className="fw-bold text-white mb-3">Navigation</h6>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <Link to="/" className="text-muted text-decoration-none hover-text-primary">
+                  <Link to="/" className="text-white text-decoration-none hover-text-primary">
                     Accueil
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/marketplace" className="text-muted text-decoration-none hover-text-primary">
+                  <Link to="/marketplace" className="text-white text-decoration-none hover-text-primary">
                     Marketplace
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/services" className="text-muted text-decoration-none hover-text-primary">
+                  <Link to="/services" className="text-white text-decoration-none hover-text-primary">
                     Services
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/p2p" className="text-muted text-decoration-none hover-text-primary">
+                  <Link to="/p2p" className="text-white text-decoration-none hover-text-primary">
                     Transfert P2P
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/blog" className="text-muted text-decoration-none hover-text-primary">
+                  <Link to="/blog" className="text-white text-decoration-none hover-text-primary">
                     Blog & Partenariats
                   </Link>
                 </li>
@@ -76,31 +76,31 @@ const Footer = () => {
               <h6 className="fw-bold text-white mb-3">Services</h6>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <span className="text-muted hover-text-primary">
+                  <span className="text-white hover-text-primary">
                     <i className="fas fa-bolt me-2 text-warning"></i>
                     ZIZ - Électricité
                   </span>
                 </li>
                 <li className="mb-2">
-                  <span className="text-muted hover-text-primary">
+                  <span className="text-white hover-text-primary">
                     <i className="fas fa-tint me-2 text-info"></i>
                     STE - Eau
                   </span>
                 </li>
                 <li className="mb-2">
-                  <span className="text-muted hover-text-primary">
+                  <span className="text-white hover-text-primary">
                     <i className="fas fa-landmark me-2 text-success"></i>
                     Taxes Communales
                   </span>
                 </li>
                 <li className="mb-2">
-                  <span className="text-muted hover-text-primary">
+                  <span className="text-white hover-text-primary">
                     <i className="fas fa-exchange-alt me-2 text-primary"></i>
                     Transferts P2P
                   </span>
                 </li>
                 <li className="mb-2">
-                  <Link to="/services" className="text-muted text-decoration-none hover-text-primary">
+                  <Link to="/services" className="text-white text-decoration-none hover-text-primary">
                     Voir tous les services
                   </Link>
                 </li>
@@ -112,17 +112,17 @@ const Footer = () => {
               <h6 className="fw-bold text-white mb-3">Légal</h6>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <Link to="/terms" className="text-muted text-decoration-none hover-text-primary">
+                  <Link to="/terms" className="text-white text-decoration-none hover-text-primary">
                     Conditions d'utilisation
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/privacy" className="text-muted text-decoration-none hover-text-primary">
+                  <Link to="/privacy" className="text-white text-decoration-none hover-text-primary">
                     Politique de confidentialité
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/vendor-agreement" className="text-muted text-decoration-none hover-text-primary">
+                  <Link to="/vendor-agreement" className="text-white text-decoration-none hover-text-primary">
                     Contrat vendeur
                   </Link>
                 </li>
@@ -132,7 +132,7 @@ const Footer = () => {
             {/* Colonne Contact */}
             <Col lg={2} md={6} className="mb-4">
               <h6 className="fw-bold text-white mb-3">Contact</h6>
-              <ul className="list-unstyled text-muted">
+              <ul className="list-unstyled text-white">
                 <li className="mb-2">
                   <i className="fas fa-phone me-2 text-primary"></i>
                   +235 XX XX XX XX
@@ -157,7 +157,7 @@ const Footer = () => {
           <Row className="mt-4 pt-4 border-top border-secondary">
             <Col lg={6} className="mb-3">
               <h6 className="fw-bold text-white mb-2">Téléchargez notre application</h6>
-              <p className="text-muted small mb-3">
+              <p className="text-white small mb-3">
                 Disponible bientôt sur iOS et Android
               </p>
               <div className="d-flex gap-2">
@@ -173,7 +173,7 @@ const Footer = () => {
             </Col>
             <Col lg={6} className="mb-3">
               <h6 className="fw-bold text-white mb-2">Newsletter</h6>
-              <p className="text-muted small mb-3">
+              <p className="text-white small mb-3">
                 Restez informé des nouvelles fonctionnalités
               </p>
               <div className="d-flex">
@@ -197,13 +197,13 @@ const Footer = () => {
         <Container>
           <Row className="align-items-center">
             <Col md={6} className="text-center text-md-start">
-              <p className="text-muted small mb-0">
+              <p className="text-white small mb-0">
                 &copy; {currentYear} ZouDou-Souk. Tous droits réservés.
               </p>
             </Col>
             <Col md={6} className="text-center text-md-end">
               <div className="d-flex justify-content-center justify-content-md-end align-items-center">
-                <span className="text-muted small me-3">Paiements sécurisés avec:</span>
+                <span className="text-white small me-3">Paiements sécurisés avec:</span>
                 <div className="payment-methods">
                   <i className="fab fa-cc-visa text-muted me-2 fa-lg" title="Visa"></i>
                   <i className="fab fa-cc-mastercard text-muted me-2 fa-lg" title="Mastercard"></i>

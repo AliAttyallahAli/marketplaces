@@ -3,14 +3,20 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const { auth, adminAuth } = require('../middleware/auth');
 
-// Route pour obtenir le profil de l'utilisateur connecté
-router.get('/profile', auth, userController.getProfile);
+// Routes publiques
+// (Aucune pour l'instant)
 
-// Autres routes existantes...
+// Routes authentifiées
+router.get('/profile', auth, userController.getProfile);
+router.put('/profile', auth, userController.updateProfile);
+router.put('/change-password', auth, userController.changePassword);
+router.put('/notification-preferences', auth, userController.updateNotificationPreferences);
+router.post('/deactivate', auth, userController.deactivateAccount);
+
+// Routes admin
 router.get('/all', adminAuth, userController.getAllUsers);
 router.get('/vendeurs', adminAuth, userController.getAllVendeurs);
 router.get('/:id', adminAuth, userController.getUserDetails);
-router.put('/profile', auth, userController.updateProfile);
 router.post('/:id/verify-kyc', adminAuth, userController.verifyKYC);
 router.post('/:id/verify-kyb', adminAuth, userController.verifyKYB);
 

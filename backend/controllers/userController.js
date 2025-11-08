@@ -1,110 +1,220 @@
-const User = require('../models/User');
-const Wallet = require('../models/Wallet');
+const db = require('../config/database');
+const bcrypt = require('bcryptjs');
 
-exports.getProfile = (req, res) => {
+const userController = {
+  // Obtenir le profil de l'utilisateur connecté
+  getProfile: (req, res) => {
     const userId = req.user.id;
 
-    User.findById(userId, (err, user) => {
-        if (err) return res.status(500).json({ error: 'Erreur serveur' });
-        if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    db.get('SELECT * FROM users WHERE id = ?', [userId], (err, user) => {
+      if (err) {
+        return res.status(500).json({ error: 'Erreur base de données' });
+      }
+      if (!user) {
+        return res.status(404).json({ error: 'Utilisateur non trouvé' });
+      }
 
-        // Récupérer le wallet
-        Wallet.findByUserId(userId, (err, wallet) => {
-            if (err) return res.status(500).json({ error: 'Erreur récupération wallet' });
+      // Ne pas renvoyer le mot de passe
+      delete user.password;
 
-            const userProfile = {
-                id: user.id,
-                nni: user.nni,
-                phone: user.phone,
-                email: user.email,
-                role: user.role,
-                nom: user.nom,
-                prenom: user.prenom,
-                date_naissance: user.date_naissance,
-                lieu_naissance: user.lieu_naissance,
-                province: user.province,
-                region: user.region,
-                ville: user.ville,
-                quartier: user.quartier,
-                photo: user.photo,
-                kyc_verified: user.kyc_verified,
-                kyb_verified: user.kyb_verified,
-                created_at: user.created_at,
-                wallet: wallet ? {
-                    balance: wallet.balance,
-                    phone: wallet.phone,
-                    qr_code: wallet.qr_code
-                } : null
-            };
+      // Récupérer le wallet de l'utilisateur
+      db.get('SELECT * FROM wallets WHERE user_id = ?', [userId], (err, wallet) => {
+        if (err) {
+          return res.status(500).json({ error: 'Erreur récupération wallet' });
+        }
 
-            res.json({ user: userProfile });
+        res.json({
+          user: {
+            ...user,
+            wallet: wallet || null
+          }
         });
+      });
     });
-};
+  },
 
-exports.updateProfile = (req, res) => {
+  // Mettre à jour le profil
+  updateProfile: (req, res) => {
     const userId = req.user.id;
-    const updateData = req.body;
+    const {
+      nom, prenom, date_naissance, lieu_naissance,
+      province, region, ville, quartier, photo
+    } = req.body;
 
-    User.updateProfile(userId, updateData, (err) => {
-        if (err) return res.status(500).json({ error: 'Erreur mise à jour profil' });
+    db.run(
+      `UPDATE users SET 
+        nom = ?, prenom = ?, date_naissance = ?, lieu_naissance = ?,
+        province = ?, region = ?, ville = ?, quartier = ?, photo = ?,
+        updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [nom, prenom, date_naissance, lieu_naissance, province, region, ville, quartier, photo, userId],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Erreur mise à jour profil' });
+        }
 
         res.json({ message: 'Profil mis à jour avec succès' });
+      }
+    );
+  },
+
+  // Changer le mot de passe
+  changePassword: (req, res) => {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Tous les champs sont requis' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
+    }
+
+    // Vérifier l'ancien mot de passe
+    db.get('SELECT password FROM users WHERE id = ?', [userId], (err, user) => {
+      if (err) {
+        return res.status(500).json({ error: 'Erreur base de données' });
+      }
+
+      if (!bcrypt.compareSync(currentPassword, user.password)) {
+        return res.status(400).json({ error: 'Mot de passe actuel incorrect' });
+      }
+
+      // Hasher le nouveau mot de passe
+      const hashedPassword = bcrypt.hashSync(newPassword, 10);
+
+      db.run(
+        'UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [hashedPassword, userId],
+        function(err) {
+          if (err) {
+            return res.status(500).json({ error: 'Erreur changement mot de passe' });
+          }
+
+          res.json({ message: 'Mot de passe changé avec succès' });
+        }
+      );
     });
-};
+  },
 
-exports.getAllUsers = (req, res) => {
-    User.getAllClients((err, clients) => {
-        if (err) return res.status(500).json({ error: 'Erreur récupération utilisateurs' });
+  // Obtenir tous les utilisateurs (admin)
+  getAllUsers: (req, res) => {
+    db.all('SELECT id, nni, phone, email, role, nom, prenom, kyc_verified, kyb_verified, created_at FROM users ORDER BY created_at DESC', 
+      (err, users) => {
+        if (err) {
+          return res.status(500).json({ error: 'Erreur récupération utilisateurs' });
+        }
 
-        res.json({ users: clients });
-    });
-};
+        res.json({ users });
+      }
+    );
+  },
 
-exports.getAllVendeurs = (req, res) => {
-    User.getAllVendeurs((err, vendeurs) => {
-        if (err) return res.status(500).json({ error: 'Erreur récupération vendeurs' });
+  // Obtenir tous les vendeurs
+  getAllVendeurs: (req, res) => {
+    db.all(`SELECT id, nni, phone, email, role, nom, prenom, province, ville, 
+                   kyc_verified, kyb_verified, created_at 
+            FROM users WHERE role = 'vendeur' ORDER BY created_at DESC`, 
+      (err, vendeurs) => {
+        if (err) {
+          return res.status(500).json({ error: 'Erreur récupération vendeurs' });
+        }
 
         res.json({ vendeurs });
-    });
-};
+      }
+    );
+  },
 
-exports.getUserDetails = (req, res) => {
+  // Obtenir les détails d'un utilisateur (admin)
+  getUserDetails: (req, res) => {
     const userId = req.params.id;
 
-    User.findById(userId, (err, user) => {
-        if (err) return res.status(500).json({ error: 'Erreur serveur' });
-        if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    db.get(`SELECT u.*, w.balance, w.phone as wallet_phone
+            FROM users u 
+            LEFT JOIN wallets w ON u.id = w.user_id 
+            WHERE u.id = ?`, [userId], (err, user) => {
+      if (err) {
+        return res.status(500).json({ error: 'Erreur base de données' });
+      }
+      if (!user) {
+        return res.status(404).json({ error: 'Utilisateur non trouvé' });
+      }
 
-        Wallet.findByUserId(userId, (err, wallet) => {
-            if (err) return res.status(500).json({ error: 'Erreur récupération wallet' });
-
-            const userDetails = {
-                ...user,
-                wallet: wallet
-            };
-
-            res.json({ user: userDetails });
-        });
+      delete user.password;
+      res.json({ user });
     });
-};
+  },
 
-exports.verifyKYC = (req, res) => {
+  // Vérifier KYC (admin)
+  verifyKYC: (req, res) => {
     const userId = req.params.id;
 
-    User.verifyKYC(userId, (err) => {
-        if (err) return res.status(500).json({ error: 'Erreur vérification KYC' });
+    db.run('UPDATE users SET kyc_verified = 1 WHERE id = ?', [userId], function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Erreur vérification KYC' });
+      }
 
-        res.json({ message: 'KYC vérifié avec succès' });
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Utilisateur non trouvé' });
+      }
+
+      res.json({ message: 'KYC vérifié avec succès' });
     });
-};
+  },
 
-exports.verifyKYB = (req, res) => {
+  // Vérifier KYB (admin)
+  verifyKYB: (req, res) => {
     const userId = req.params.id;
 
-    User.verifyKYB(userId, (err) => {
-        if (err) return res.status(500).json({ error: 'Erreur vérification KYB' });
+    db.run('UPDATE users SET kyb_verified = 1 WHERE id = ?', [userId], function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Erreur vérification KYB' });
+      }
 
-        res.json({ message: 'KYB vérifié avec succès' });
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Utilisateur non trouvé' });
+      }
+
+      res.json({ message: 'KYB vérifié avec succès' });
     });
+  },
+
+  // Mettre à jour les préférences de notification
+  updateNotificationPreferences: (req, res) => {
+    const userId = req.user.id;
+    const { preferences } = req.body;
+
+    db.run(
+      'UPDATE users SET notification_preferences = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [JSON.stringify(preferences), userId],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Erreur mise à jour préférences' });
+        }
+
+        res.json({ message: 'Préférences mises à jour avec succès' });
+      }
+    );
+  },
+
+  // Désactiver le compte
+  deactivateAccount: (req, res) => {
+    const userId = req.user.id;
+    const { reason } = req.body;
+
+    db.run(
+      'UPDATE users SET is_active = 0, deactivation_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [reason, userId],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Erreur désactivation compte' });
+        }
+
+        res.json({ message: 'Compte désactivé avec succès' });
+      }
+    );
+  }
 };
+
+module.exports = userController;
