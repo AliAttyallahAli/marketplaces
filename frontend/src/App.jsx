@@ -4,8 +4,12 @@ import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from './context/AuthContext';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
-
-// Pages principales
+import ChatWidget from './components/chat/ChatWidget';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+// Pages
 import Home from './pages/Home';
 import Marketplace from './pages/Marketplace';
 import ProductDetail from './components/products/ProductDetail';
@@ -15,24 +19,14 @@ import Blog from './pages/Blog';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import Vendeur from './pages/Vendeur';
-
-// Authentification
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
-
-// Pages légales
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import VendorAgreement from './pages/VendorAgreement';
-
-// Nouvelles pages
-import Documents from './pages/Documents';
-import Statistics from './pages/Statistics';
-import Settings from './pages/Settings';
-import NotificationsPage from './pages/NotificationsPage';
 import ServiceManagement from './pages/ServiceManagement';
-import NewsletterManagement from './pages/NewsletterManagement';
-
+import NewsletterManagement from './components/newsletter/NewsletterManagement';
+import ChatPage from './pages/Chat'; // Ajouter cette ligne
+import Documents from './pages/Documents';
+import StatisticsPage from './pages/Statistics';
 // Composants de service
 import ZIZPayment from './components/services/ZIZPayment';
 import STEPayment from './components/services/STEPayment';
@@ -49,6 +43,12 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/vendor-agreement" element={<VendorAgreement />} />
             
             {/* Routes marketplace */}
             <Route path="/marketplace" element={<Marketplace />} />
@@ -62,18 +62,9 @@ function App() {
             <Route path="/services/payment/tax" element={<TaxPayment />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/profile" element={<Profile />} />
-            
-            {/* Nouvelles routes */}
+            <Route path="/chat" element={<ChatPage />} /> {/* Ajouter cette ligne */}
             <Route path="/documents" element={<Documents />} />
-            <Route path="/statistics" element={<Statistics />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
-            
-            {/* Routes légales */}
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/vendor-agreement" element={<VendorAgreement />} />
-            
+            <Route path="/statistics" element={<StatisticsPage />} />
             {/* Routes avec restrictions de rôle */}
             <Route path="/admin/*" element={<Admin />} />
             <Route path="/vendeur/*" element={<Vendeur />} />
@@ -91,6 +82,10 @@ function App() {
           </Routes>
         </main>
         <Footer />
+        
+        {/* Widget de chat */}
+        <ChatWidget />
+        
         <ToastContainer 
           position="top-right"
           autoClose={5000}

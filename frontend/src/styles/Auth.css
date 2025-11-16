@@ -1,0 +1,65 @@
+/* Styles spécifiques aux pages d'authentification */
+
+.auth-page {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.login-page,
+.register-page,
+.forgot-password-page,
+.reset-password-page {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+/* Animation pour les étapes */
+.step-1,
+.step-2 {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Styles pour les indicateurs de force du mot de passe */
+.password-strength-weak {
+  color: #dc3545;
+}
+
+.password-strength-medium {
+  color: #ffc107;
+}
+
+.password-strength-strong {
+  color: #198754;
+}
+
+/* Styles pour les inputs group */
+.input-group-text {
+  background-color: #f8f9fa;
+  border-right: none;
+}
+
+.form-control:focus + .input-group-text {
+  border-color: #0d6efd;
+  background-color: #e7f1ff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .auth-page .card-body {
+    padding: 2rem !important;
+  }
+  
+  .demo-accounts .btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+}

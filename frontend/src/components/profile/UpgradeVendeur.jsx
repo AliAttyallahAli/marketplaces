@@ -1,203 +1,284 @@
 import React, { useState } from 'react';
-import { Card, Form, Button, Row, Col, Alert } from 'react-bootstrap';
-import { useAuth } from '../../context/AuthContext';
-import { PROVINCES_TCHAD } from '../../utils/constants';
+import { Form, Button, Row, Col, Alert, Card } from 'react-bootstrap';
+import { toast } from 'react-toastify';
 
-const UpgradeVendeur = () => {
-  const { user, upgradeToVendeur } = useAuth();
+const UpgradeVendeur = ({ userData, onSubmit }) => {
   const [formData, setFormData] = useState({
-    nom: user?.nom || '',
-    prenom: user?.prenom || '',
-    date_naissance: user?.date_naissance || '',
-    lieu_naissance: user?.lieu_naissance || '',
-    province: user?.province || '',
-    region: user?.region || '',
-    ville: user?.ville || '',
-    quartier: user?.quartier || ''
+    nom: userData?.nom || '',
+    prenom: userData?.prenom || '',
+    date_naissance: userData?.date_naissance || '',
+    lieu_naissance: userData?.lieu_naissance || '',
+    province: userData?.province || '',
+    region: userData?.region || '',
+    ville: userData?.ville || '',
+    quartier: userData?.quartier || ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const provincesTchad = [
+    'Batha', 'Borkou', 'Chari-Baguirmi', 'Ennedi-Est', 'Ennedi-Ouest',
+    'Guéra', 'Hadjer-Lamis', 'Kanem', 'Lac', 'Logone-Occidental',
+    'Logone-Oriental', 'Mandoul', 'Mayo-Kebbi-Est', 'Mayo-Kebbi-Ouest',
+    'Moyen-Chari', 'N\'Djamena', 'Ouaddaï', 'Salamat', 'Sila', 'Tandjilé',
+    'Tibesti', 'Wadi Fira', 'Hadjar-Lamis'
+  ];
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.nom.trim()) newErrors.nom = 'Le nom est requis';
+    if (!formData.prenom.trim()) newErrors.prenom = 'Le prénom est requis';
+    if (!formData.date_naissance) newErrors.date_naissance = 'La date de naissance est requise';
+    if (!formData.lieu_naissance.trim()) newErrors.lieu_naissance = 'Le lieu de naissance est requis';
+    if (!formData.province) newErrors.province = 'La province est requise';
+    if (!formData.ville.trim()) newErrors.ville = 'La ville est requise';
+    
+    return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    const result = await upgradeToVendeur(formData);
     
-    if (result.success) {
-      setSuccess('Félicitations! Vous êtes maintenant vendeur sur ZouDou-Souk.');
-    } else {
-      setError(result.error);
+    const newErrors = validateForm();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
+
+    setLoading(true);
     
-    setLoading(false);
+    try {
+      await onSubmit(formData);
+    } catch (error) {
+      console.error('Erreur upgrade vendeur:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Card className="border-0">
-      <Card.Body className="p-4">
-        <div className="text-center mb-4">
-          <i className="fas fa-store fa-3x text-primary mb-3"></i>
-          <h4 className="fw-bold">Devenir Vendeur</h4>
-          <p className="text-muted">
-            Complétez votre profil pour commencer à vendre sur ZouDou-Souk
+    <div>
+      <Alert variant="info" className="mb-4">
+        <i className="fas fa-info-circle me-2"></i>
+        Devenez vendeur sur ZouDou-Souk et commencez à vendre vos produits et services 
+        à travers tout le Tchad. Complétez les informations ci-dessous pour finaliser 
+        votre inscription en tant que vendeur.
+      </Alert>
+
+      <Card className="border-0 bg-light mb-4">
+        <Card.Body>
+          <h6 className="fw-bold mb-3">
+            <i className="fas fa-gift me-2"></i>
+            Avantages d'être Vendeur
+          </h6>
+          <Row>
+            <Col md={6}>
+              <ul className="mb-0">
+                <li>Publication illimitée de produits</li>
+                <li>Accès au dashboard vendeur</li>
+                <li>Statistiques de ventes détaillées</li>
+              </ul>
+            </Col>
+            <Col md={6}>
+              <ul className="mb-0">
+                <li>Paiements sécurisés via mobile money</li>
+                <li>Visibilité sur toute la plateforme</li>
+                <li>Support client dédié</li>
+              </ul>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+
+      <Form onSubmit={handleSubmit}>
+        <h5 className="fw-bold mb-4">Informations du Vendeur</h5>
+        
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Nom *</Form.Label>
+              <Form.Control
+                type="text"
+                name="nom"
+                value={formData.nom}
+                onChange={handleChange}
+                isInvalid={!!errors.nom}
+                required
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.nom}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+          
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Prénom *</Form.Label>
+              <Form.Control
+                type="text"
+                name="prenom"
+                value={formData.prenom}
+                onChange={handleChange}
+                isInvalid={!!errors.prenom}
+                required
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.prenom}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Date de naissance *</Form.Label>
+              <Form.Control
+                type="date"
+                name="date_naissance"
+                value={formData.date_naissance}
+                onChange={handleChange}
+                isInvalid={!!errors.date_naissance}
+                required
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.date_naissance}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+          
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Lieu de naissance *</Form.Label>
+              <Form.Control
+                type="text"
+                name="lieu_naissance"
+                value={formData.lieu_naissance}
+                onChange={handleChange}
+                isInvalid={!!errors.lieu_naissance}
+                required
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.lieu_naissance}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Province *</Form.Label>
+              <Form.Select
+                name="province"
+                value={formData.province}
+                onChange={handleChange}
+                isInvalid={!!errors.province}
+                required
+              >
+                <option value="">Sélectionnez une province</option>
+                {provincesTchad.map(province => (
+                  <option key={province} value={province}>
+                    {province}
+                  </option>
+                ))}
+              </Form.Select>
+              <Form.Control.Feedback type="invalid">
+                {errors.province}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+          
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Région</Form.Label>
+              <Form.Control
+                type="text"
+                name="region"
+                value={formData.region}
+                onChange={handleChange}
+              />
+            </Form.Group>
+          </Col>
+          
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Ville *</Form.Label>
+              <Form.Control
+                type="text"
+                name="ville"
+                value={formData.ville}
+                onChange={handleChange}
+                isInvalid={!!errors.ville}
+                required
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.ville}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </Col>
+        </Row>
+
+        <Form.Group className="mb-4">
+          <Form.Label>Quartier</Form.Label>
+          <Form.Control
+            type="text"
+            name="quartier"
+            value={formData.quartier}
+            onChange={handleChange}
+          />
+        </Form.Group>
+
+        <Alert variant="warning" className="mb-4">
+          <h6 className="fw-bold">
+            <i className="fas fa-exclamation-triangle me-2"></i>
+            Important
+          </h6>
+          <p className="mb-0">
+            En devenant vendeur, vous acceptez les conditions générales de vente 
+            et vous engagez à fournir des informations exactes. Une vérification 
+            supplémentaire (KYB) pourra être requise pour certains types de produits.
           </p>
-        </div>
+        </Alert>
 
-        {error && <Alert variant="danger">{error}</Alert>}
-        {success && <Alert variant="success">{success}</Alert>}
-
-        <Form onSubmit={handleSubmit}>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Nom *</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="nom"
-                  value={formData.nom}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Prénom *</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="prenom"
-                  value={formData.prenom}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Date de naissance</Form.Label>
-                <Form.Control
-                  type="date"
-                  name="date_naissance"
-                  value={formData.date_naissance}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Lieu de naissance</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="lieu_naissance"
-                  value={formData.lieu_naissance}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Province *</Form.Label>
-                <Form.Select
-                  name="province"
-                  value={formData.province}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Sélectionnez votre province</option>
-                  {PROVINCES_TCHAD.map(province => (
-                    <option key={province} value={province}>{province}</option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Région</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="region"
-                  value={formData.region}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Ville *</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="ville"
-                  value={formData.ville}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Quartier</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="quartier"
-                  value={formData.quartier}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <div className="bg-light p-3 rounded mb-4">
-            <h6 className="fw-bold mb-3">Avantages de devenir vendeur:</h6>
-            <ul className="mb-0">
-              <li>Vendez vos produits à toute la communauté Tchadienne</li>
-              <li>Gérez votre boutique en ligne facilement</li>
-              <li>Acceptez les paiements Mobile Money sécurisés</li>
-              <li>Bénéficiez de la visibilité de la plateforme</li>
-              <li>Accédez aux statistiques de vos ventes</li>
-            </ul>
-          </div>
-
-          <Button
-            variant="primary"
-            type="submit"
-            className="w-100 py-2"
+        <div className="text-center">
+          <Button 
+            variant="success" 
+            type="submit" 
             disabled={loading}
+            size="lg"
           >
             {loading ? (
               <>
                 <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                Traitement...
+                Traitement en cours...
               </>
             ) : (
               <>
-                <i className="fas fa-rocket me-2"></i>
-                Devenir vendeur
+                <i className="fas fa-store me-2"></i>
+                Devenir Vendeur
               </>
             )}
           </Button>
-        </Form>
-      </Card.Body>
-    </Card>
+        </div>
+      </Form>
+    </div>
   );
 };
 

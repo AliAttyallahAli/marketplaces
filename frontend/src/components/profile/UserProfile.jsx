@@ -1,16 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Form, Button, Row, Col, Alert, Badge, Modal } from 'react-bootstrap';
-import { userAPI } from '../../services/auth';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState } from 'react';
+import { Form, Button, Row, Col, Alert, Card, Badge } from 'react-bootstrap'; // Ajouter Badge
+import { userAPI } from '../../services/api';
+import { toast } from 'react-toastify';
 
-const UserProfile = () => {
-  const { user, updateUserProfile } = useAuth();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
+
+const UserProfile = ({ userData, onUpdate }) => {
+  const [formData, setFormData] = useState({
+    nom: userData?.nom || '',
+    prenom: userData?.prenom || '',
+    email: userData?.email || '',
+    phone: userData?.phone || '',
+    date_naissance: userData?.date_naissance || '',
+    lieu_naissance: userData?.lieu_naissance || '',
+    province: userData?.province || '',
+    region: userData?.region || '',
+    ville: userData?.ville || '',
+    quartier: userData?.quartier || '',
+    photo: userData?.photo || ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const provincesTchad = [
     'Batha', 'Borkou', 'Chari-Baguirmi', 'Ennedi-Est', 'Ennedi-Ouest',
@@ -20,370 +29,332 @@ const UserProfile = () => {
     'Tibesti', 'Wadi Fira', 'Hadjar-Lamis'
   ];
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
 
-  const loadProfile = async () => {
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.nom.trim()) newErrors.nom = 'Le nom est requis';
+    if (!formData.prenom.trim()) newErrors.prenom = 'Le prénom est requis';
+    if (!formData.email.trim()) newErrors.email = 'L\'email est requis';
+    if (!formData.phone.trim()) newErrors.phone = 'Le téléphone est requis';
+    
+    return newErrors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const newErrors = validateForm();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setLoading(true);
+    
     try {
-      const response = await userAPI.getProfile();
-      setProfile(response.data.user);
+      await userAPI.updateProfile(formData);
+      toast.success('Profil mis à jour avec succès!');
+      onUpdate(); // Recharger les données
     } catch (error) {
-      setError('Erreur lors du chargement du profil');
+      console.error('Erreur mise à jour profil:', error);
+      const message = error.response?.data?.error || 'Erreur lors de la mise à jour';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      await updateUserProfile(profile);
-      setSuccess('Profil mis à jour avec succès');
-    } catch (error) {
-      setError(error.response?.data?.error || 'Erreur lors de la mise à jour');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setProfile(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Simuler l'upload de la photo
+      // Simuler l'upload de photo
       const reader = new FileReader();
       reader.onload = (e) => {
-        setProfile(prev => ({ ...prev, photo: e.target.result }));
-        setShowPhotoModal(false);
+        setFormData(prev => ({
+          ...prev,
+          photo: e.target.result
+        }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const getRoleBadge = (role) => {
-    const variants = {
-      'admin': 'warning',
-      'vendeur': 'success',
-      'client': 'primary'
-    };
-    return variants[role] || 'secondary';
-  };
-
-  if (loading) {
-    return (
-      <div className="text-center py-4">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Chargement...</span>
+  return (
+    <div>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h5 className="fw-bold mb-0">Informations Personnelles</h5>
+        <div>
+          <Badge bg={userData?.kyc_verified ? 'success' : 'warning'} className="me-2">
+            KYC: {userData?.kyc_verified ? 'Vérifié' : 'En attente'}
+          </Badge>
+          {userData?.role === 'vendeur' && (
+            <Badge bg={userData?.kyb_verified ? 'success' : 'warning'}>
+              KYB: {userData?.kyb_verified ? 'Vérifié' : 'En attente'}
+            </Badge>
+          )}
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="user-profile">
-      <Row>
-        <Col lg={4} className="mb-4">
-          {/* Carte de profil */}
-          <Card className="border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <div className="profile-avatar mb-3">
-                {profile?.photo ? (
-                  <img 
-                    src={profile.photo} 
-                    alt="Profile" 
-                    className="rounded-circle"
-                    style={{ width: '120px', height: '120px', objectFit: 'cover' }}
+      <Form onSubmit={handleSubmit}>
+        <Row>
+          {/* Photo de profil */}
+          <Col md={3} className="text-center mb-4">
+            <div className="mb-3">
+              {formData.photo ? (
+                <img 
+                  src={formData.photo} 
+                  alt="Profile" 
+                  className="rounded-circle"
+                  style={{ width: '150px', height: '150px', objectFit: 'cover' }}
+                />
+              ) : (
+                <div 
+                  className="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center"
+                  style={{ width: '150px', height: '150px' }}
+                >
+                  <i className="fas fa-user fa-3x"></i>
+                </div>
+              )}
+            </div>
+            <Form.Group>
+              <Form.Label className="btn btn-outline-primary btn-sm cursor-pointer">
+                <i className="fas fa-camera me-1"></i>
+                Changer photo
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="d-none"
+                />
+              </Form.Label>
+            </Form.Group>
+          </Col>
+
+          <Col md={9}>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Nom *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="nom"
+                    value={formData.nom}
+                    onChange={handleChange}
+                    isInvalid={!!errors.nom}
+                    required
                   />
-                ) : (
-                  <div 
-                    className="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center"
-                    style={{ width: '120px', height: '120px' }}
+                  <Form.Control.Feedback type="invalid">
+                    {errors.nom}
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Prénom *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="prenom"
+                    value={formData.prenom}
+                    onChange={handleChange}
+                    isInvalid={!!errors.prenom}
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.prenom}
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Email *</Form.Label>
+                  <Form.Control
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    isInvalid={!!errors.email}
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.email}
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Téléphone *</Form.Label>
+                  <Form.Control
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    isInvalid={!!errors.phone}
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.phone}
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Date de naissance</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="date_naissance"
+                    value={formData.date_naissance}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Lieu de naissance</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="lieu_naissance"
+                    value={formData.lieu_naissance}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Province</Form.Label>
+                  <Form.Select
+                    name="province"
+                    value={formData.province}
+                    onChange={handleChange}
                   >
-                    <i className="fas fa-user fa-3x"></i>
-                  </div>
-                )}
-              </div>
+                    <option value="">Sélectionnez une province</option>
+                    {provincesTchad.map(province => (
+                      <option key={province} value={province}>
+                        {province}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
               
-              <h4 className="fw-bold mb-1">{profile?.prenom} {profile?.nom}</h4>
-              <Badge bg={getRoleBadge(profile?.role)} className="mb-2">
-                {profile?.role?.toUpperCase()}
-              </Badge>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Région</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="region"
+                    value={formData.region}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
               
-              <p className="text-muted mb-2">{profile?.email}</p>
-              <p className="text-muted mb-3">{profile?.phone}</p>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Ville</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="ville"
+                    value={formData.ville}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
 
-              {/* Statut de vérification */}
-              <div className="verification-status mb-3">
-                {profile?.kyc_verified ? (
-                  <Badge bg="success" className="me-2">
-                    <i className="fas fa-check me-1"></i>
-                    KYC Vérifié
-                  </Badge>
-                ) : (
-                  <Badge bg="warning" className="me-2">
-                    <i className="fas fa-clock me-1"></i>
-                    KYC En attente
-                  </Badge>
-                )}
-                
-                {profile?.kyb_verified && (
-                  <Badge bg="success">
-                    <i className="fas fa-check me-1"></i>
-                    KYB Vérifié
-                  </Badge>
-                )}
-              </div>
+            <Form.Group className="mb-4">
+              <Form.Label>Quartier</Form.Label>
+              <Form.Control
+                type="text"
+                name="quartier"
+                value={formData.quartier}
+                onChange={handleChange}
+              />
+            </Form.Group>
 
+            <div className="d-flex gap-2">
               <Button 
-                variant="outline-primary" 
-                size="sm" 
-                className="w-100 mb-2"
-                onClick={() => setShowPhotoModal(true)}
+                variant="primary" 
+                type="submit" 
+                disabled={loading}
               >
-                <i className="fas fa-camera me-2"></i>
-                Changer la photo
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    Mise à jour...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-save me-2"></i>
+                    Enregistrer les modifications
+                  </>
+                )}
               </Button>
-            </Card.Body>
-          </Card>
+              
+              <Button variant="outline-secondary" type="button">
+                <i className="fas fa-times me-2"></i>
+                Annuler
+              </Button>
+            </div>
+          </Col>
+        </Row>
+      </Form>
 
-          {/* Informations de compte */}
-          <Card className="border-0 shadow-sm mt-3">
-            <Card.Body>
-              <h6 className="fw-bold mb-3">Informations de compte</h6>
-              <div className="account-info">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <small className="text-muted">Membre depuis:</small>
-                  <small>{new Date(profile?.created_at).toLocaleDateString('fr-FR')}</small>
-                </div>
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <small className="text-muted">Dernière connexion:</small>
-                  <small>Aujourd'hui</small>
-                </div>
-                <div className="d-flex justify-content-between align-items-center">
-                  <small className="text-muted">Statut:</small>
-                  <Badge bg="success" className="small">Actif</Badge>
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col lg={8}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body className="p-4">
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h5 className="fw-bold mb-0">Informations Personnelles</h5>
-                <Badge bg="light" text="dark">
-                  {profile?.kyc_verified ? 'Profil complet' : 'Profil incomplet'}
-                </Badge>
-              </div>
-
-              {error && <Alert variant="danger">{error}</Alert>}
-              {success && <Alert variant="success">{success}</Alert>}
-
-              <Form onSubmit={handleSaveProfile}>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Nom *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="nom"
-                        value={profile?.nom || ''}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Prénom *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="prenom"
-                        value={profile?.prenom || ''}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Email</Form.Label>
-                      <Form.Control
-                        type="email"
-                        value={profile?.email || ''}
-                        disabled
-                      />
-                      <Form.Text className="text-muted">
-                        L'email ne peut pas être modifié
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Téléphone</Form.Label>
-                      <Form.Control
-                        type="tel"
-                        value={profile?.phone || ''}
-                        disabled
-                      />
-                      <Form.Text className="text-muted">
-                        Le téléphone ne peut pas être modifié
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Date de naissance</Form.Label>
-                      <Form.Control
-                        type="date"
-                        name="date_naissance"
-                        value={profile?.date_naissance || ''}
-                        onChange={handleInputChange}
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Lieu de naissance</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="lieu_naissance"
-                        value={profile?.lieu_naissance || ''}
-                        onChange={handleInputChange}
-                        placeholder="Ville de naissance"
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Province *</Form.Label>
-                      <Form.Select
-                        name="province"
-                        value={profile?.province || ''}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Sélectionnez votre province</option>
-                        {provincesTchad.map(province => (
-                          <option key={province} value={province}>{province}</option>
-                        ))}
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Région</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="region"
-                        value={profile?.region || ''}
-                        onChange={handleInputChange}
-                        placeholder="Votre région"
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Ville *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="ville"
-                        value={profile?.ville || ''}
-                        onChange={handleInputChange}
-                        required
-                        placeholder="Votre ville"
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Quartier</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="quartier"
-                        value={profile?.quartier || ''}
-                        onChange={handleInputChange}
-                        placeholder="Votre quartier"
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <div className="d-flex gap-2 mt-4">
-                  <Button 
-                    variant="primary" 
-                    type="submit" 
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Sauvegarde...
-                      </>
-                    ) : (
-                      'Enregistrer les modifications'
-                    )}
-                  </Button>
-                  <Button variant="outline-secondary" type="button">
-                    Annuler
-                  </Button>
-                </div>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Modal de changement de photo */}
-      <Modal show={showPhotoModal} onHide={() => setShowPhotoModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Changer la photo de profil</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form.Group>
-            <Form.Label>Choisir une photo</Form.Label>
-            <Form.Control
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoUpload}
-            />
-            <Form.Text className="text-muted">
-              Formats supportés: JPG, PNG, GIF. Taille max: 5MB
-            </Form.Text>
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowPhotoModal(false)}>
-            Annuler
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {/* Informations système */}
+      <Card className="mt-4 border-0 bg-light">
+        <Card.Body>
+          <h6 className="fw-bold mb-3">
+            <i className="fas fa-info-circle me-2"></i>
+            Informations Système
+          </h6>
+          <Row>
+            <Col md={4}>
+              <small className="text-muted d-block">NNI</small>
+              <strong>{userData?.nni}</strong>
+            </Col>
+            <Col md={4}>
+              <small className="text-muted d-block">Rôle</small>
+              <strong>
+                {userData?.role === 'admin' ? 'Administrateur' :
+                 userData?.role === 'vendeur' ? 'Vendeur' : 'Client'}
+              </strong>
+            </Col>
+            <Col md={4}>
+              <small className="text-muted d-block">Membre depuis</small>
+              <strong>
+                {userData?.created_at ? new Date(userData.created_at).toLocaleDateString('fr-FR') : 'N/A'}
+              </strong>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
     </div>
   );
 };

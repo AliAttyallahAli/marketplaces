@@ -1,187 +1,200 @@
 const db = require('../config/database');
 
-exports.getConversations = (req, res) => {
-  const userId = req.user.id;
+const chatController = {
+  // Obtenir les conversations de l'utilisateur
+  getConversations: (req, res) => {
+    const userId = req.user.id;
 
-  const sql = `
-    SELECT 
-      c.id,
-      c.last_message,
-      c.last_message_at,
-      c.unread_count,
-      u.id as user_id,
-      u.nom,
-      u.prenom,
-      u.photo,
-      u.role,
-      u.kyc_verified
-    FROM conversations c
-    JOIN conversation_participants cp1 ON c.id = cp1.conversation_id
-    JOIN conversation_participants cp2 ON c.id = cp2.conversation_id
-    JOIN users u ON cp2.user_id = u.id
-    WHERE cp1.user_id = ? AND cp2.user_id != ?
-    ORDER BY c.last_message_at DESC
-  `;
-
-  db.all(sql, [userId, userId], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: 'Erreur récupération conversations' });
-    }
-    res.json({ conversations: rows });
-  });
-};
-
-exports.getMessages = (req, res) => {
-  const conversationId = req.params.conversationId;
-  const userId = req.user.id;
-
-  // Vérifier que l'utilisateur participe à la conversation
-  const checkSql = 'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?';
-  
-  db.get(checkSql, [conversationId, userId], (err, row) => {
-    if (err || !row) {
-      return res.status(403).json({ error: 'Accès non autorisé à cette conversation' });
-    }
-
-    const sql = `
+    const query = `
       SELECT 
-        m.id,
-        m.content,
-        m.type,
-        m.created_at,
-        m.read_at,
-        u.id as sender_id,
-        u.nom as sender_nom,
-        u.prenom as sender_prenom
-      FROM messages m
-      JOIN users u ON m.sender_id = u.id
-      WHERE m.conversation_id = ?
-      ORDER BY m.created_at ASC
+        c.*,
+        (SELECT COUNT(*) FROM chat_messages cm 
+         WHERE cm.conversation_id = c.id AND 
+         (cm.read_by IS NULL OR cm.read_by NOT LIKE ?) AND 
+         cm.sender_id != ?) as unread_count
+      FROM chat_conversations c
+      WHERE c.id IN (
+        SELECT conversation_id FROM chat_participants 
+        WHERE user_id = ? AND is_active = 1
+      )
+      AND c.is_active = 1
+      ORDER BY c.last_message_at DESC
     `;
 
-    db.all(sql, [conversationId], (err, rows) => {
+    db.all(query, [`%${userId}%`, userId, userId], (err, conversations) => {
       if (err) {
-        return res.status(500).json({ error: 'Erreur récupération messages' });
+        console.error('Error fetching conversations:', err);
+        return res.status(500).json({ error: 'Erreur base de données' });
       }
 
-      // Marquer les messages comme lus
-      db.run(
-        'UPDATE messages SET read_at = CURRENT_TIMESTAMP WHERE conversation_id = ? AND sender_id != ? AND read_at IS NULL',
-        [conversationId, userId]
-      );
-
-      res.json({ messages: rows });
-    });
-  });
-};
-
-exports.sendMessage = (req, res) => {
-  const conversationId = req.params.conversationId;
-  const { content } = req.body;
-  const senderId = req.user.id;
-
-  if (!content || content.trim() === '') {
-    return res.status(400).json({ error: 'Le message ne peut pas être vide' });
-  }
-
-  // Vérifier que l'utilisateur participe à la conversation
-  const checkSql = 'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?';
-  
-  db.get(checkSql, [conversationId, senderId], (err, row) => {
-    if (err || !row) {
-      return res.status(403).json({ error: 'Accès non autorisé à cette conversation' });
-    }
-
-    const sql = `
-      INSERT INTO messages (conversation_id, sender_id, content, type)
-      VALUES (?, ?, ?, 'text')
-    `;
-
-    db.run(sql, [conversationId, senderId, content.trim()], function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Erreur envoi message' });
-      }
-
-      // Mettre à jour la conversation
-      db.run(
-        'UPDATE conversations SET last_message = ?, last_message_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [content.substring(0, 100), conversationId]
-      );
-
-      // Incrémenter le compteur de messages non lus pour les autres participants
-      db.run(
-        'UPDATE conversation_participants SET unread_count = unread_count + 1 WHERE conversation_id = ? AND user_id != ?',
-        [conversationId, senderId]
-      );
-
-      res.status(201).json({ 
-        message: 'Message envoyé avec succès',
-        messageId: this.lastID 
+      // Récupérer les participants pour chaque conversation
+      const conversationsWithParticipants = conversations.map(conversation => {
+        return new Promise((resolve) => {
+          db.all(`SELECT u.id, u.nom, u.prenom, u.photo, u.role, cp.role as participant_role
+                  FROM chat_participants cp
+                  JOIN users u ON cp.user_id = u.id
+                  WHERE cp.conversation_id = ? AND cp.is_active = 1`,
+            [conversation.id], (err, participants) => {
+              if (err) {
+                resolve({ ...conversation, participants: [] });
+              } else {
+                resolve({ ...conversation, participants });
+              }
+            }
+          );
+        });
       });
+
+      Promise.all(conversationsWithParticipants)
+        .then(conversations => res.json({ conversations }))
+        .catch(error => {
+          console.error('Error loading participants:', error);
+          res.status(500).json({ error: 'Erreur chargement participants' });
+        });
     });
-  });
-};
+  },
 
-exports.createConversation = (req, res) => {
-  const { participant_id } = req.body;
-  const userId = req.user.id;
+  // Obtenir les messages d'une conversation
+  getMessages: (req, res) => {
+    const { conversationId } = req.params;
+    const { page = 1, limit = 50 } = req.query;
+    const offset = (page - 1) * limit;
 
-  if (userId === participant_id) {
-    return res.status(400).json({ error: 'Impossible de créer une conversation avec soi-même' });
-  }
+    // Vérifier que l'utilisateur fait partie de la conversation
+    db.get(`SELECT 1 FROM chat_participants 
+            WHERE conversation_id = ? AND user_id = ? AND is_active = 1`,
+      [conversationId, req.user.id], (err, participant) => {
+        if (err || !participant) {
+          return res.status(403).json({ error: 'Accès non autorisé' });
+        }
 
-  // Vérifier si une conversation existe déjà
-  const checkSql = `
-    SELECT c.id 
-    FROM conversations c
-    JOIN conversation_participants cp1 ON c.id = cp1.conversation_id
-    JOIN conversation_participants cp2 ON c.id = cp2.conversation_id
-    WHERE cp1.user_id = ? AND cp2.user_id = ?
-  `;
-
-  db.get(checkSql, [userId, participant_id], (err, existingConversation) => {
-    if (err) {
-      return res.status(500).json({ error: 'Erreur vérification conversation' });
-    }
-
-    if (existingConversation) {
-      return res.json({ 
-        message: 'Conversation existante',
-        conversationId: existingConversation.id 
-      });
-    }
-
-    // Créer une nouvelle conversation
-    db.run('INSERT INTO conversations (last_message_at) VALUES (CURRENT_TIMESTAMP)', function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Erreur création conversation' });
-      }
-
-      const conversationId = this.lastID;
-
-      // Ajouter les participants
-      const participants = [userId, participant_id];
-      let participantsAdded = 0;
-
-      participants.forEach(participantId => {
-        db.run(
-          'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)',
-          [conversationId, participantId],
-          function(err) {
+        db.all(`SELECT cm.*, u.nom, u.prenom, u.photo, u.role
+                FROM chat_messages cm
+                JOIN users u ON cm.sender_id = u.id
+                WHERE cm.conversation_id = ? AND cm.is_deleted = 0
+                ORDER BY cm.created_at DESC
+                LIMIT ? OFFSET ?`,
+          [conversationId, limit, offset], (err, messages) => {
             if (err) {
-              return res.status(500).json({ error: 'Erreur ajout participant' });
+              console.error('Error fetching messages:', err);
+              return res.status(500).json({ error: 'Erreur base de données' });
             }
-            participantsAdded++;
 
-            if (participantsAdded === participants.length) {
-              res.status(201).json({ 
-                message: 'Conversation créée avec succès',
-                conversationId 
-              });
-            }
+            res.json({ messages: messages.reverse() });
           }
         );
-      });
-    });
-  });
+      }
+    );
+  },
+
+  // Envoyer un message
+  sendMessage: (req, res) => {
+    const { conversationId } = req.params;
+    const { content, messageType = 'text', fileUrl = null, fileName = null, fileSize = null } = req.body;
+    const senderId = req.user.id;
+
+    // Vérifier que l'utilisateur fait partie de la conversation
+    db.get(`SELECT 1 FROM chat_participants 
+            WHERE conversation_id = ? AND user_id = ? AND is_active = 1`,
+      [conversationId, senderId], (err, participant) => {
+        if (err || !participant) {
+          return res.status(403).json({ error: 'Accès non autorisé' });
+        }
+
+        db.run(`INSERT INTO chat_messages 
+                (conversation_id, sender_id, message_type, content, file_url, file_name, file_size) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [conversationId, senderId, messageType, content, fileUrl, fileName, fileSize],
+          function(err) {
+            if (err) {
+              console.error('Error sending message:', err);
+              return res.status(500).json({ error: 'Erreur envoi message' });
+            }
+
+            // Mettre à jour la dernière activité de la conversation
+            db.run(`UPDATE chat_conversations 
+                    SET last_message = ?, last_message_at = CURRENT_TIMESTAMP 
+                    WHERE id = ?`,
+              [content.substring(0, 100), conversationId]
+            );
+
+            // Récupérer le message complet
+            db.get(`SELECT cm.*, u.nom, u.prenom, u.photo, u.role
+                    FROM chat_messages cm 
+                    JOIN users u ON cm.sender_id = u.id 
+                    WHERE cm.id = ?`, 
+              [this.lastID], (err, message) => {
+                if (err) {
+                  return res.status(500).json({ error: 'Erreur récupération message' });
+                }
+
+                res.status(201).json({ 
+                  message: 'Message envoyé',
+                  message 
+                });
+              }
+            );
+          }
+        );
+      }
+    );
+  },
+
+  // Créer une nouvelle conversation
+  createConversation: (req, res) => {
+    const { type = 'direct', title, participantIds } = req.body;
+    const created_by = req.user.id;
+
+    db.run(`INSERT INTO chat_conversations (type, title, created_by) VALUES (?, ?, ?)`,
+      [type, title, created_by], function(err) {
+        if (err) {
+          console.error('Error creating conversation:', err);
+          return res.status(500).json({ error: 'Erreur création conversation' });
+        }
+
+        const conversationId = this.lastID;
+
+        // Ajouter le créateur comme participant
+        const participants = [{ user_id: created_by, role: 'admin' }];
+        
+        // Ajouter les autres participants
+        if (participantIds && participantIds.length > 0) {
+          participantIds.forEach(participantId => {
+            if (participantId !== created_by) {
+              participants.push({ user_id: participantId, role: 'member' });
+            }
+          });
+        }
+
+        // Insérer tous les participants
+        const placeholders = participants.map(() => '(?, ?, ?)').join(',');
+        const values = participants.flatMap(p => [conversationId, p.user_id, p.role]);
+
+        db.run(`INSERT INTO chat_participants (conversation_id, user_id, role) VALUES ${placeholders}`,
+          values, function(err) {
+            if (err) {
+              console.error('Error adding participants:', err);
+              return res.status(500).json({ error: 'Erreur ajout participants' });
+            }
+
+            // Récupérer la conversation créée avec ses participants
+            db.get(`SELECT * FROM chat_conversations WHERE id = ?`, 
+              [conversationId], (err, conversation) => {
+                if (err) {
+                  return res.status(500).json({ error: 'Erreur récupération conversation' });
+                }
+
+                res.status(201).json({ 
+                  message: 'Conversation créée',
+                  conversation 
+                });
+              }
+            );
+          }
+        );
+      }
+    );
+  }
 };
+
+module.exports = chatController;
