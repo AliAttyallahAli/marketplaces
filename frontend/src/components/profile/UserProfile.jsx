@@ -349,7 +349,7 @@ const UserProfile = ({ userData, onUpdate }) => {
             <Col md={4}>
               <small className="text-muted d-block">Membre depuis</small>
               <strong>
-                {userData?.created_at ? new Date(userData.created_at).toLocaleDateString('fr-FR') : 'N/A'}
+                {userData?.created_at ? new Date(userData.created_at).toLocaleDateString('fr-FR') : 'en/EN'}
               </strong>
             </Col>
           </Row>
