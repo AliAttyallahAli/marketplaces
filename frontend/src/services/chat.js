@@ -1,22 +1,23 @@
 import api from './api';
 
 export const chatAPI = {
-  // Conversations
+  // Récupérer les conversations
   getConversations: () => 
     api.get('/chat/conversations'),
 
-  getMessages: (conversationId, params = {}) => 
-    api.get(`/chat/conversations/${conversationId}/messages`, { params }),
+  // Récupérer les messages d'une conversation
+  getMessages: (conversationId) => 
+    api.get(`/chat/conversations/${conversationId}/messages`),
 
+  // Envoyer un message
   sendMessage: (conversationId, messageData) => 
     api.post(`/chat/conversations/${conversationId}/messages`, messageData),
 
+  // Créer une nouvelle conversation
   createConversation: (conversationData) => 
     api.post('/chat/conversations', conversationData),
 
-  // Utilisateurs
-  searchUsers: (params = {}) => 
-    api.get('/chat/users/search', { params }),
+  // Marquer les messages comme lus
+  markAsRead: (conversationId) => 
+    api.put(`/chat/conversations/${conversationId}/read`),
 };
-
-export default chatAPI;

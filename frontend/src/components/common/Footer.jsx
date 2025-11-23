@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
+import { Container, Row, Col, Button, Form } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
@@ -44,27 +44,27 @@ const Footer = () => {
               <h6 className="fw-bold text-white mb-3">Navigation</h6>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <Link to="/" className="text-white text-decoration-none hover-text-primary">
+                  <Link to="/" className="text-white text-decoration-none">
                     Accueil
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/marketplace" className="text-white text-decoration-none hover-text-primary">
+                  <Link to="/marketplace" className="text-white text-decoration-none">
                     Marketplace
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/services" className="text-white text-decoration-none hover-text-primary">
+                  <Link to="/services" className="text-white text-decoration-none">
                     Services
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/p2p" className="text-white text-decoration-none hover-text-primary">
+                  <Link to="/p2p" className="text-white text-decoration-none">
                     Transfert P2P
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/blog" className="text-white text-decoration-none hover-text-primary">
+                  <Link to="/blog" className="text-white text-decoration-none">
                     Blog & Partenariats
                   </Link>
                 </li>
@@ -76,31 +76,31 @@ const Footer = () => {
               <h6 className="fw-bold text-white mb-3">Services</h6>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <span className="text-white hover-text-primary">
+                  <span className="text-white">
                     <i className="fas fa-bolt me-2 text-warning"></i>
                     ZIZ - Électricité
                   </span>
                 </li>
                 <li className="mb-2">
-                  <span className="text-white hover-text-primary">
+                  <span className="text-white">
                     <i className="fas fa-tint me-2 text-info"></i>
                     STE - Eau
                   </span>
                 </li>
                 <li className="mb-2">
-                  <span className="text-white hover-text-primary">
+                  <span className="text-white">
                     <i className="fas fa-landmark me-2 text-success"></i>
                     Taxes Communales
                   </span>
                 </li>
                 <li className="mb-2">
-                  <span className="text-white hover-text-primary">
+                  <span className="text-white">
                     <i className="fas fa-exchange-alt me-2 text-primary"></i>
                     Transferts P2P
                   </span>
                 </li>
                 <li className="mb-2">
-                  <Link to="/services" className="text-white text-decoration-none hover-text-primary">
+                  <Link to="/services" className="text-white text-decoration-none">
                     Voir tous les services
                   </Link>
                 </li>
@@ -112,17 +112,17 @@ const Footer = () => {
               <h6 className="fw-bold text-white mb-3">Légal</h6>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <Link to="/terms" className="text-white text-decoration-none hover-text-primary">
+                  <Link to="/terms" className="text-white text-decoration-none">
                     Conditions d'utilisation
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/privacy" className="text-white text-decoration-none hover-text-primary">
+                  <Link to="/privacy" className="text-white text-decoration-none">
                     Politique de confidentialité
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/vendor-agreement" className="text-white text-decoration-none hover-text-primary">
+                  <Link to="/vendor-agreement" className="text-white text-decoration-none">
                     Contrat vendeur
                   </Link>
                 </li>
@@ -161,14 +161,14 @@ const Footer = () => {
                 Disponible bientôt sur iOS et Android
               </p>
               <div className="d-flex gap-2">
-                <button className="btn btn-outline-light btn-sm disabled" disabled>
+                <Button variant="outline-light" size="sm" disabled>
                   <i className="fab fa-apple me-2"></i>
                   App Store
-                </button>
-                <button className="btn btn-outline-light btn-sm disabled" disabled>
+                </Button>
+                <Button variant="outline-light" size="sm" disabled>
                   <i className="fab fa-google-play me-2"></i>
                   Google Play
-                </button>
+                </Button>
               </div>
             </Col>
             <Col lg={6} className="mb-3">
@@ -177,15 +177,16 @@ const Footer = () => {
                 Restez informé des nouvelles fonctionnalités
               </p>
               <div className="d-flex">
-                <input 
+                <Form.Control 
                   type="email" 
-                  className="form-control form-control-sm me-2" 
+                  size="sm"
                   placeholder="Votre email"
                   disabled
+                  className="me-2"
                 />
-                <button className="btn btn-primary btn-sm" disabled>
+                <Button variant="primary" size="sm" disabled>
                   S'abonner
-                </button>
+                </Button>
               </div>
             </Col>
           </Row>

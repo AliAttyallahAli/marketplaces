@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Form, InputGroup, Button, Spinner, Dropdown, Badge, Alert } from 'react-bootstrap';
+import { 
+  Card, 
+  Form, 
+  Button, 
+  InputGroup, 
+  Badge,
+  Spinner,
+  Alert
+} from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { chatAPI } from '../../services/chat';
 
@@ -7,58 +15,34 @@ const MessageList = ({ conversation, onBack }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [typingUsers, setTypingUsers] = useState([]);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [page, setPage] = useState(1);
-  
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
-  const messagesContainerRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
-    loadMessages();
-    // Rejoindre la conversation socket (à implémenter)
-    // joinConversation(conversation.id);
-    
-    return () => {
-      // Quitter la conversation socket (à implémenter)
-      // leaveConversation(conversation.id);
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
+    if (conversation) {
+      loadMessages();
+    }
   }, [conversation]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const loadMessages = async (loadMore = false) => {
-    if (loadMore && !hasMoreMessages) return;
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const loadMessages = async () => {
+    if (!conversation?.id) return;
     
-    const currentPage = loadMore ? page + 1 : 1;
-    
+    setLoading(true);
+    setError('');
     try {
-      const response = await chatAPI.getMessages(conversation.id, { 
-        page: currentPage, 
-        limit: 20 
-      });
-      
-      const newMessages = response.data.messages;
-      
-      if (loadMore) {
-        setMessages(prev => [...newMessages, ...prev]);
-        setPage(currentPage);
-      } else {
-        setMessages(newMessages);
-        setPage(1);
-      }
-      
-      // Vérifier s'il y a plus de messages à charger
-      setHasMoreMessages(newMessages.length === 20);
+      const response = await chatAPI.getMessages(conversation.id);
+      setMessages(response.data.messages || []);
     } catch (error) {
       console.error('Error loading messages:', error);
       setError('Erreur lors du chargement des messages');
@@ -67,502 +51,223 @@ const MessageList = ({ conversation, onBack }) => {
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !conversation?.id) return;
 
     setSending(true);
     setError('');
-
     try {
       const response = await chatAPI.sendMessage(conversation.id, {
         content: newMessage.trim(),
-        message_type: 'text'
+        type: 'text'
       });
 
       // Ajouter le nouveau message à la liste
-      const sentMessage = response.data.message;
-      setMessages(prev => [...prev, sentMessage]);
+      setMessages(prev => [...prev, response.data.message]);
       setNewMessage('');
 
-      // Arrêter l'indicateur de frappe
-      handleStopTyping();
-
+      // Simulation réponse automatique pour le support
+      if (conversation.type === 'support') {
+        simulateSupportResponse();
+      }
     } catch (error) {
       console.error('Error sending message:', error);
-      setError('Erreur lors de l\'envoi du message');
+      const errorMessage = error.response?.data?.error || 'Erreur lors de l\'envoi du message';
+      setError(errorMessage);
     } finally {
       setSending(false);
     }
   };
 
-  const handleTyping = () => {
-    // Émettre l'événement de frappe (à implémenter avec socket)
-    // socket.emit('typing_start', { conversationId: conversation.id, userId: user.id });
+  const simulateSupportResponse = () => {
+    setIsTyping(true);
     
-    // Réinitialiser le timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    typingTimeoutRef.current = setTimeout(() => {
-      handleStopTyping();
-    }, 3000);
+    setTimeout(() => {
+      const supportResponse = {
+        id: Date.now(),
+        sender_id: 1, // ID du support
+        content: 'Merci pour votre message. Notre équipe vous répondra dans les plus brefs délais.',
+        type: 'text',
+        created_at: new Date().toISOString(),
+        nom: 'Support',
+        prenom: 'ZouDou-Souk',
+        photo: null
+      };
+      
+      setMessages(prev => [...prev, supportResponse]);
+      setIsTyping(false);
+    }, 2000);
   };
 
-  const handleStopTyping = () => {
-    // Émettre l'arrêt de frappe (à implémenter avec socket)
-    // socket.emit('typing_stop', { conversationId: conversation.id, userId: user.id });
-    
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-  };
-
-  const handleLoadMore = () => {
-    loadMessages(true);
-  };
-
-  const formatMessageTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const isYesterday = new Date(now.setDate(now.getDate() - 1)).toDateString() === date.toDateString();
-
-    if (isToday) {
-      return date.toLocaleTimeString('fr-FR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-    } else if (isYesterday) {
-      return `Hier ${date.toLocaleTimeString('fr-FR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      })}`;
-    } else {
-      return date.toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
     }
   };
 
-  const shouldShowDateSeparator = (currentMessage, previousMessage) => {
-    if (!previousMessage) return true;
-    
-    const currentDate = new Date(currentMessage.created_at).toDateString();
-    const previousDate = new Date(previousMessage.created_at).toDateString();
-    
-    return currentDate !== previousDate;
+  const formatTime = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const formatDateSeparator = (dateString) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+  const participant = conversation?.participants?.find(p => p.id !== user.id) || conversation?.participants?.[0];
 
-    if (date.toDateString() === today.toDateString()) {
-      return "Aujourd'hui";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Hier';
-    } else {
-      return date.toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-    }
-  };
-
-  const getConversationTitle = () => {
-    if (conversation.title) return conversation.title;
-    
-    const otherParticipants = conversation.participants?.filter(p => p.id !== user.id) || [];
-    if (otherParticipants.length === 1) {
-      return `${otherParticipants[0].prenom} ${otherParticipants[0].nom}`;
-    } else if (otherParticipants.length > 1) {
-      return `${otherParticipants.length} participants`;
-    }
-    
-    return 'Conversation';
-  };
-
-  const getParticipantStatus = (participant) => {
-    // Simuler le statut en ligne (à intégrer avec socket)
-    return Math.random() > 0.5 ? 'En ligne' : 'Hors ligne';
-  };
-
-  const markMessagesAsRead = (messageIds) => {
-    // Marquer les messages comme lus (à implémenter avec socket)
-    // socket.emit('mark_as_read', { conversationId: conversation.id, messageIds });
-    
-    // Mettre à jour localement
-    setMessages(prev => prev.map(msg => 
-      messageIds.includes(msg.id) 
-        ? { ...msg, read: true }
-        : msg
-    ));
-  };
-
-  // Simuler la réception de messages en temps réel
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() > 0.8 && messages.length > 0) {
-        const otherParticipants = conversation.participants?.filter(p => p.id !== user.id) || [];
-        if (otherParticipants.length > 0) {
-          const randomParticipant = otherParticipants[Math.floor(Math.random() * otherParticipants.length)];
-          const mockMessages = [
-            "Bonjour ! Comment puis-je vous aider ?",
-            "Merci pour votre message !",
-            "Je vais vérifier cela pour vous.",
-            "Avez-vous d'autres questions ?",
-            "Nous sommes là pour vous aider !"
-          ];
-          
-          const mockMessage = {
-            id: Date.now(),
-            sender_id: randomParticipant.id,
-            nom: randomParticipant.nom,
-            prenom: randomParticipant.prenom,
-            content: mockMessages[Math.floor(Math.random() * mockMessages.length)],
-            created_at: new Date().toISOString(),
-            message_type: 'text',
-            is_read: false
-          };
-          
-          setMessages(prev => [...prev, mockMessage]);
-        }
-      }
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [conversation, messages.length, user.id]);
+  if (!conversation) {
+    return (
+      <Card className="h-100">
+        <Card.Body className="d-flex align-items-center justify-content-center text-muted">
+          <div className="text-center">
+            <i className="fas fa-comments fa-3x mb-3"></i>
+            <p>Aucune conversation sélectionnée</p>
+          </div>
+        </Card.Body>
+      </Card>
+    );
+  }
 
   return (
-    <div className="d-flex flex-column h-100">
+    <Card className="h-100">
       {/* En-tête de la conversation */}
-      <div className="p-3 border-bottom bg-light">
-        <div className="d-flex align-items-center">
-          <Button
-            variant="link"
-            onClick={onBack}
-            className="p-0 me-3 text-muted"
-            title="Retour aux conversations"
-          >
-            <i className="fas fa-arrow-left fa-lg"></i>
-          </Button>
-          
-          <div className="flex-grow-1">
-            <div className="d-flex align-items-center">
-              <div className="flex-shrink-0 me-3">
-                {conversation.type === 'support' ? (
-                  <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
-                       style={{ width: '45px', height: '45px' }}>
-                    <i className="fas fa-headset"></i>
-                  </div>
-                ) : conversation.participants?.filter(p => p.id !== user.id).length === 1 ? (
-                  <div className="bg-success text-white rounded-circle d-flex align-items-center justify-content-center"
-                       style={{ width: '45px', height: '45px' }}>
-                    <i className="fas fa-user"></i>
-                  </div>
-                ) : (
-                  <div className="bg-warning text-white rounded-circle d-flex align-items-center justify-content-center"
-                       style={{ width: '45px', height: '45px' }}>
-                    <i className="fas fa-users"></i>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex-grow-1">
-                <h6 className="fw-bold mb-0">{getConversationTitle()}</h6>
-                <div className="text-muted small">
-                  {conversation.participants?.length || 0} participant(s)
-                  {typingUsers.length > 0 && (
-                    <span className="text-primary ms-2">
-                      <i className="fas fa-pencil-alt me-1"></i>
-                      {typingUsers.map(u => u.prenom).join(', ')} est en train d'écrire...
-                    </span>
-                  )}
-                </div>
-              </div>
+      <Card.Header className="bg-light d-flex align-items-center">
+        <Button 
+          variant="outline-secondary" 
+          size="sm" 
+          onClick={onBack}
+          className="me-2 d-lg-none"
+        >
+          <i className="fas fa-arrow-left"></i>
+        </Button>
+        
+        <div className="d-flex align-items-center flex-grow-1">
+          <img
+            src={participant?.photo || '/assets/default-avatar.png'}
+            alt={conversation.title}
+            className="rounded-circle me-3"
+            style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+          />
+          <div>
+            <h6 className="mb-0">{conversation.title}</h6>
+            <div className="d-flex align-items-center gap-2">
+              <Badge 
+                bg={
+                  participant?.role === 'admin' ? 'warning' :
+                  participant?.role === 'vendeur' ? 'success' : 'secondary'
+                }
+              >
+                {participant?.role}
+              </Badge>
+              <small className="text-muted">
+                {conversation.type === 'support' ? 'Support 24/7' : 'Utilisateur'}
+              </small>
             </div>
           </div>
-
-          <Dropdown>
-            <Dropdown.Toggle variant="link" className="text-muted p-0 border-0">
-              <i className="fas fa-ellipsis-v"></i>
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              <Dropdown.Item>
-                <i className="fas fa-info-circle me-2"></i>
-                Détails de la conversation
-              </Dropdown.Item>
-              <Dropdown.Item>
-                <i className="fas fa-bell me-2"></i>
-                Paramètres de notification
-              </Dropdown.Item>
-              <Dropdown.Divider />
-              <Dropdown.Item className="text-danger">
-                <i className="fas fa-times-circle me-2"></i>
-                Quitter la conversation
-              </Dropdown.Item>
-            </Dropdown.Menu>
-          </Dropdown>
         </div>
-      </div>
+      </Card.Header>
 
-      {/* Liste des messages */}
-      <div 
-        ref={messagesContainerRef}
-        className="flex-grow-1 overflow-auto p-3 bg-chat"
-        style={{ background: '#f8f9fa' }}
-        onScroll={(e) => {
-          // Charger plus de messages quand on scroll en haut
-          if (e.target.scrollTop === 0 && hasMoreMessages && !loading) {
-            handleLoadMore();
-          }
-        }}
-      >
-        {error && (
-          <Alert variant="danger" className="mb-3">
-            <i className="fas fa-exclamation-triangle me-2"></i>
-            {error}
-          </Alert>
-        )}
+      {/* Zone des messages */}
+      <Card.Body className="d-flex flex-column p-0">
+        <div 
+          className="flex-grow-1 p-3"
+          style={{ 
+            overflowY: 'auto', 
+            maxHeight: '400px',
+            background: '#f8f9fa'
+          }}
+        >
+          {error && (
+            <Alert variant="danger" className="py-2">
+              <small>{error}</small>
+            </Alert>
+          )}
 
-        {loading && messages.length === 0 ? (
-          <div className="text-center py-5">
-            <Spinner animation="border" role="status" className="text-primary mb-3">
-              <span className="visually-hidden">Chargement...</span>
-            </Spinner>
-            <p className="text-muted">Chargement des messages...</p>
-          </div>
-        ) : (
-          <>
-            {/* Bouton charger plus de messages */}
-            {hasMoreMessages && (
-              <div className="text-center mb-3">
-                <Button 
-                  variant="outline-primary" 
-                  size="sm"
-                  onClick={handleLoadMore}
-                  disabled={loading}
+          {loading ? (
+            <div className="text-center py-4">
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-2 text-muted">Chargement des messages...</p>
+            </div>
+          ) : (
+            <>
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`d-flex mb-3 ${message.sender_id === user.id ? 'justify-content-end' : 'justify-content-start'}`}
                 >
-                  {loading ? (
-                    <Spinner animation="border" size="sm" className="me-2" />
-                  ) : (
-                    <i className="fas fa-history me-2"></i>
-                  )}
-                  Charger plus de messages
-                </Button>
-              </div>
-            )}
-
-            {/* Messages */}
-            {messages.map((message, index) => {
-              const isOwnMessage = message.sender_id === user.id;
-              const previousMessage = messages[index - 1];
-              const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
-              const showSenderInfo = !previousMessage || 
-                previousMessage.sender_id !== message.sender_id || 
-                shouldShowDateSeparator(message, previousMessage);
-
-              return (
-                <div key={message.id}>
-                  {/* Séparateur de date */}
-                  {showDateSeparator && (
-                    <div className="text-center my-4">
-                      <Badge bg="light" text="dark" className="px-3 py-2">
-                        {formatDateSeparator(message.created_at)}
-                      </Badge>
-                    </div>
-                  )}
-
-                  {/* Message */}
-                  <div
-                    className={`d-flex mb-3 ${
-                      isOwnMessage ? 'justify-content-end' : 'justify-content-start'
+                  <div 
+                    className={`p-3 rounded ${
+                      message.sender_id === user.id 
+                        ? 'bg-primary text-white' 
+                        : 'bg-white border'
                     }`}
+                    style={{ 
+                      maxWidth: '70%',
+                      borderRadius: message.sender_id === user.id 
+                        ? '18px 18px 4px 18px' 
+                        : '18px 18px 18px 4px'
+                    }}
                   >
-                    <div
-                      className={`position-relative ${
-                        isOwnMessage 
-                          ? 'bg-primary text-white' 
-                          : 'bg-white border text-dark'
-                      } rounded-3 p-3`}
-                      style={{ 
-                        maxWidth: '70%',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                      }}
-                    >
-                      {/* Infos expéditeur */}
-                      {!isOwnMessage && showSenderInfo && (
-                        <div className="small fw-bold mb-1">
-                          {message.prenom} {message.nom}
-                        </div>
-                      )}
-                      
-                      {/* Contenu du message */}
-                      <div className="mb-1" style={{ 
-                        wordWrap: 'break-word',
-                        lineHeight: '1.4'
-                      }}>
-                        {message.content}
-                      </div>
-                      
-                      {/* Métadonnées du message */}
-                      <div className={`d-flex justify-content-between align-items-center ${
-                        isOwnMessage ? 'text-white-50' : 'text-muted'
-                      }`} style={{ fontSize: '0.75rem' }}>
-                        <span>{formatMessageTime(message.created_at)}</span>
-                        
-                        {isOwnMessage && (
-                          <span className="ms-2">
-                            {message.is_read ? (
-                              <i className="fas fa-check-double" title="Message lu"></i>
-                            ) : message.id > 0 ? (
-                              <i className="fas fa-check" title="Message envoyé"></i>
-                            ) : (
-                              <i className="fas fa-clock" title="Envoi en cours..."></i>
-                            )}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Indicateur de statut d'envoi */}
-                      {message.isSending && (
-                        <div className="position-absolute top-0 end-0 translate-middle">
-                          <Spinner animation="border" size="sm" />
-                        </div>
-                      )}
+                    <div className="message-content">
+                      {message.content}
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Indicateur de frappe */}
-            {typingUsers.length > 0 && (
-              <div className="d-flex justify-content-start mb-3">
-                <div className="bg-light border rounded-3 p-3">
-                  <div className="d-flex align-items-center">
-                    <div className="typing-indicator me-2">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                    <small className="text-muted">
-                      {typingUsers.map(u => u.prenom).join(', ')} écrit...
+                    <small className={`d-block mt-1 ${
+                      message.sender_id === user.id ? 'text-white-50' : 'text-muted'
+                    }`}>
+                      {formatTime(message.created_at)}
                     </small>
                   </div>
                 </div>
-              </div>
-            )}
+              ))}
 
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-
-      {/* Formulaire d'envoi */}
-      <div className="p-3 border-top bg-white">
-        <Form onSubmit={handleSendMessage}>
-          <InputGroup>
-            <Button variant="outline-secondary" title="Ajouter un fichier">
-              <i className="fas fa-paperclip"></i>
-            </Button>
-            
-            <Form.Control
-              type="text"
-              placeholder="Tapez votre message..."
-              value={newMessage}
-              onChange={(e) => {
-                setNewMessage(e.target.value);
-                handleTyping();
-              }}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage(e);
-                }
-              }}
-              disabled={sending}
-              style={{ 
-                borderLeft: 'none', 
-                borderRight: 'none',
-                resize: 'none'
-              }}
-            />
-            
-            <Button 
-              variant="outline-secondary" 
-              title="Émoticônes"
-            >
-              <i className="far fa-smile"></i>
-            </Button>
-            
-            <Button 
-              variant="primary" 
-              type="submit" 
-              disabled={sending || !newMessage.trim()}
-              title="Envoyer le message"
-            >
-              {sending ? (
-                <Spinner animation="border" size="sm" />
-              ) : (
-                <i className="fas fa-paper-plane"></i>
+              {isTyping && (
+                <div className="d-flex justify-content-start mb-3">
+                  <div className="bg-white border rounded p-3">
+                    <div className="typing-indicator">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                </div>
               )}
-            </Button>
-          </InputGroup>
-          
-          <div className="mt-2">
-            <small className="text-muted">
-              <i className="fas fa-shield-alt me-1"></i>
-              Messages sécurisés et chiffrés
-            </small>
-          </div>
-        </Form>
-      </div>
 
-      {/* Styles pour l'indicateur de frappe */}
-      <style>
-        {`
-          .typing-indicator {
-            display: inline-flex;
-            align-items: center;
-            height: 20px;
-          }
-          .typing-indicator span {
-            height: 8px;
-            width: 8px;
-            background: #6c757d;
-            border-radius: 50%;
-            display: block;
-            margin: 0 1px;
-            animation: typing 1s infinite ease-in-out;
-          }
-          .typing-indicator span:nth-child(1) { animation-delay: 0.2s; }
-          .typing-indicator span:nth-child(2) { animation-delay: 0.4s; }
-          .typing-indicator span:nth-child(3) { animation-delay: 0.6s; }
-          @keyframes typing {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-          }
-          .bg-chat {
-            background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-          }
-        `}
-      </style>
-    </div>
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
+
+        {/* Zone de saisie */}
+        <div className="border-top bg-white p-3">
+          <Form onSubmit={handleSendMessage}>
+            <InputGroup>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                placeholder="Tapez votre message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                disabled={sending}
+                style={{ resize: 'none' }}
+              />
+              <Button 
+                variant="primary" 
+                type="submit" 
+                disabled={!newMessage.trim() || sending}
+              >
+                {sending ? (
+                  <Spinner animation="border" size="sm" />
+                ) : (
+                  <i className="fas fa-paper-plane"></i>
+                )}
+              </Button>
+            </InputGroup>
+          </Form>
+        </div>
+      </Card.Body>
+    </Card>
   );
 };
 

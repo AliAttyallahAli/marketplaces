@@ -7,9 +7,6 @@ export const productsAPI = {
   getById: (id) => 
     api.get(`/products/${id}`),
 
-  getByVendeur: (vendeurId) => 
-    api.get(`/products/vendeur/${vendeurId}`),
-
   create: (productData) => 
     api.post('/products', productData),
 
@@ -21,4 +18,8 @@ export const productsAPI = {
 
   search: (query, categorie) => 
     api.get('/products/search', { params: { q: query, categorie } }),
+
+  // AJOUT: Route pour les produits d'un vendeur spécifique
+  getByVendeur: (vendeurId) => 
+    api.get(`/products/vendeur/${vendeurId}`),
 };

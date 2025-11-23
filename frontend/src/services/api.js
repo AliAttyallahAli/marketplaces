@@ -63,30 +63,40 @@ api.interceptors.response.use(
 
 // API pour l'authentification
 export const authAPI = {
-  login: (email, password) => api.post('/auth/login', { email, password }),
-  register: (userData) => api.post('/auth/register', userData),
-  upgradeToVendeur: (vendeurData) => api.post('/auth/upgrade-vendeur', vendeurData),
+  login: (email, password) => 
+    api.post('/auth/login', { email, password }),
+
+  register: (userData) => 
+    api.post('/auth/register', userData),
+
+  upgradeToVendeur: (vendeurData) => 
+    api.post('/auth/upgrade-vendeur', vendeurData),
 };
 
 // API pour les utilisateurs
 export const userAPI = {
-  getProfile: () => api.get('/users/profile'),
-  updateProfile: (profileData) => api.put('/users/profile', profileData),
-  getAllUsers: () => api.get('/users/all'),
-  getAllVendeurs: () => api.get('/users/vendeurs'),
-  getUserDetails: (id) => api.get(`/users/${id}`),
-  verifyKYC: (id) => api.post(`/users/${id}/verify-kyc`),
-  verifyKYB: (id) => api.post(`/users/${id}/verify-kyb`),
+  getProfile: () => 
+    api.get('/users/profile'),
+
+  updateProfile: (profileData) => 
+    api.put('/users/profile', profileData),
+
+  getAllUsers: () => 
+    api.get('/users/all'),
+
+  getAllVendeurs: () => 
+    api.get('/users/vendeurs'),
+
+  getUserDetails: (id) => 
+    api.get(`/users/${id}`),
+
+  verifyKYC: (id) => 
+    api.post(`/users/${id}/verify-kyc`),
+
+  verifyKYB: (id) => 
+    api.post(`/users/${id}/verify-kyb`),
 };
 // API pour les produits
-export const productsAPI = {
-  getAll: (limit = 50) => api.get(`/products?limit=${limit}`),
-  getById: (id) => api.get(`/products/${id}`),
-  create: (productData) => api.post('/products', productData),
-  update: (id, productData) => api.put(`/products/${id}`, productData),
-  delete: (id) => api.delete(`/products/${id}`),
-  search: (query, categorie) => api.get('/products/search', { params: { q: query, categorie } }),
-};
 
 
 // API pour le wallet et transactions
@@ -112,21 +122,27 @@ export const walletAPI = {
   searchTransactions: (filters) => 
     api.get('/transactions/search', { params: filters }),
 };
-
 // API pour les services
-export const servicesAPI = {
-  getAll: () => 
-    api.get('/services'),
+export const productsAPI = {
+  getAll: (limit = 50) => 
+    api.get(`/products?limit=${limit}`),
 
-  getByType: (type) => 
-    api.get(`/services/${type}`),
+  getById: (id) => 
+    api.get(`/products/${id}`),
 
-  create: (serviceData) => 
-    api.post('/services', serviceData),
+  create: (productData) => 
+    api.post('/products', productData),
 
-  update: (id, serviceData) => 
-    api.put(`/services/${id}`, serviceData),
+  update: (id, productData) => 
+    api.put(`/products/${id}`, productData),
+
+  delete: (id) => 
+    api.delete(`/products/${id}`),
+
+  search: (query, categorie) => 
+    api.get('/products/search', { params: { q: query, categorie } }),
 };
+
 
 // API pour le blog
 export const blogAPI = {

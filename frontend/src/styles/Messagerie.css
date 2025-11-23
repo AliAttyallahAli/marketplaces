@@ -1,0 +1,89 @@
+/* Styles pour la messagerie */
+.conversation-list {
+  height: 500px;
+  overflow-y: auto;
+}
+
+.message-list {
+  height: 400px;
+  overflow-y: auto;
+}
+
+.message-bubble {
+  position: relative;
+  word-wrap: break-word;
+}
+
+.message-bubble.bg-primary {
+  border-bottom-right-radius: 0 !important;
+}
+
+.message-bubble.bg-light {
+  border-bottom-left-radius: 0 !important;
+}
+
+/* Scrollbar personnalisée */
+.conversation-list::-webkit-scrollbar,
+.message-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversation-list::-webkit-scrollbar-track,
+.message-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.conversation-list::-webkit-scrollbar-thumb,
+.message-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.conversation-list::-webkit-scrollbar-thumb:hover,
+.message-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Animation pour les nouveaux messages */
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-bubble {
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+/* Badge de notification */
+.notification-badge {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .conversation-list {
+    height: 300px;
+  }
+  
+  .message-list {
+    height: 300px;
+  }
+}

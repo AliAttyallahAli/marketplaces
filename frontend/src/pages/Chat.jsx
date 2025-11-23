@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Nav, Tab } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import ConversationList from '../components/chat/ConversationList';
 import MessageList from '../components/chat/MessageList';
 import NewConversationModal from '../components/chat/NewConversationModal';
 
-const ChatPage = () => {
+const Chat = () => {
   const { user, isAuthenticated } = useAuth();
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [conversations, setConversations] = useState([]);
@@ -182,4 +182,4 @@ const ChatPage = () => {
   );
 };
 
-export default ChatPage;
+export default Chat;

@@ -26,7 +26,9 @@ import ServiceManagement from './pages/ServiceManagement';
 import NewsletterManagement from './components/newsletter/NewsletterManagement';
 import ChatPage from './pages/Chat'; // Ajouter cette ligne
 import Documents from './pages/Documents';
+import Settings from './pages/Settings';
 import StatisticsPage from './pages/Statistics';
+import './styles/Messagerie.css';
 // Composants de service
 import ZIZPayment from './components/services/ZIZPayment';
 import STEPayment from './components/services/STEPayment';
@@ -68,6 +70,7 @@ function App() {
             {/* Routes avec restrictions de rôle */}
             <Route path="/admin/*" element={<Admin />} />
             <Route path="/vendeur/*" element={<Vendeur />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/service-management" element={<ServiceManagement />} />
             <Route path="/newsletter-management" element={<NewsletterManagement />} />
             
