@@ -26,9 +26,11 @@
     "react-router-dom": "^7.9.5",
     "react-scripts": "5.0.1",
     "react-to-print": "^3.2.0",
-    "react-toastify": "^9.1.0"
+    "react-toastify": "^9.1.0",
+    "source-map": "^0.7.6"
   },
   "devDependencies": {
+    "@babel/plugin-transform-private-property-in-object": "^7.27.1",
     "@eslint/js": "^9.36.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",

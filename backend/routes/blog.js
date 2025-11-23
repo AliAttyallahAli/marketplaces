@@ -10,4 +10,5 @@ router.post('/', auth, blogController.createPost);
 router.put('/:id', auth, blogController.updatePost);
 router.delete('/:id', auth, blogController.deletePost);
 
+
 module.exports = router;

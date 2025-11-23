@@ -16,6 +16,9 @@ import ProductDetail from './components/products/ProductDetail';
 import P2P from './pages/P2P';
 import Services from './pages/Services';
 import Blog from './pages/Blog';
+import MyBlogPosts from './components/blog/MyBlogPosts';
+import EditBlogPost from './components/blog/EditBlogPost';
+import BlogDetail from './components/blog/BlogDetail';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import Vendeur from './pages/Vendeur';
@@ -63,6 +66,9 @@ function App() {
             <Route path="/services/payment/ste" element={<STEPayment />} />
             <Route path="/services/payment/tax" element={<TaxPayment />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/my-posts" element={<MyBlogPosts />} />
+            <Route path="/blog/:id" element={<BlogDetail />} />
+            <Route path="/blog/edit/:id" element={<EditBlogPost />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/chat" element={<ChatPage />} /> {/* Ajouter cette ligne */}
             <Route path="/documents" element={<Documents />} />
